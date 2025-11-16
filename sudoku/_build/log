@@ -1,9 +1,9 @@
 # dune exec bin/main.exe
 # OCAMLPARAM: unset
 # Shared cache: enabled-except-user-rules
-# Shared cache location: /Users/adityanandyal/.cache/dune/db
-# Workspace root: /Users/adityanandyal/3110/goldalpha/sudoku
-# Auto-detected concurrency: 11
+# Shared cache location: /Users/timothypark/.cache/dune/db
+# Workspace root: /Users/timothypark/3110/goldalpha/sudoku
+# Auto-detected concurrency: 8
 # Dune context:
 #  { name = "default"
 #  ; kind = "default"
@@ -13,6 +13,4 @@
 #  ; build_dir = In_build_dir "default"
 #  ; instrument_with = []
 #  }
-$ /Users/adityanandyal/.opam/cs3110-2025fa/bin/ocamlc.opt -config > /var/folders/h6/n1_8rpgd2rqc_styr3ffhsd00000gn/T/dune_ec6016_output
-$ (cd _build/default && /Users/adityanandyal/.opam/cs3110-2025fa/bin/ocamlopt.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I bin/.main.eobjs/byte -I bin/.main.eobjs/native -I lib/.sudoku.objs/byte -I lib/.sudoku.objs/native -cmi-file bin/.main.eobjs/byte/dune__exe__Main.cmi -no-alias-deps -opaque -o bin/.main.eobjs/native/dune__exe__Main.cmx -c -impl bin/main.ml)
-$ (cd _build/default && /Users/adityanandyal/.opam/cs3110-2025fa/bin/ocamlopt.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -o bin/main.exe lib/sudoku.cmxa bin/.main.eobjs/native/dune__exe__Main.cmx)
+$ /Users/timothypark/.opam/cs3110-2025fa/bin/ocamlc.opt -config > /var/folders/yf/vvjqxg_d2bs6g26kt56ls4nh0000gn/T/dune_b6a529_output
