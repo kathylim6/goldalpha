@@ -1,3 +1,4 @@
+(** let [four_board] is a 4x4 sudoku board, currently with dummy inputs *)
 let four_board = 
   [|
     [| Some 1; None;   None;   Some 4 |];
@@ -6,6 +7,7 @@ let four_board =
     [| Some 4; None;  None;   Some 1 |];
   |]
 
+(** let [nine_board] is a 9x9 sudoku board, currently with dummy inputs *)  
 let nine_board =
   [|
     [| Some 1; None;   Some 3; None;   Some 5; None;   Some 7; None;   Some 9 |];
@@ -19,6 +21,7 @@ let nine_board =
     [| Some 9; None;   Some 2; None;   Some 4; None;   Some 6; None;   Some 8 |];
   |]
 
+(** let [sixteen_board] is a 16x16 sudoku board, currently with dummy inputs *)
 let sixteen_board =
   [|
     [| Some 1;  None;   Some 3;  None;   Some 5;  None;   Some 7;  None;
@@ -68,6 +71,7 @@ let string_of_row input_row =
   |> List.map string_of_box
   |> String.concat " "
 
+(** let [string_of_board] takes in the statically inputted board above based on the user input (4, 9, or 16)*)
 let string_of_board input_board : string =
   input_board
   |> Array.to_list

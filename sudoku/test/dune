@@ -1,2 +1,4 @@
 (test
- (name test_sudoku))
+ (name test_sudoku)
+ (deps (glob_files_rec ../data/*))
+)
