@@ -2,43 +2,47 @@ open Sudoku.Sudokulogic
 
 let () =
   print_endline
-    "Hello, welcome to Sudoku! Would you like to solve a 4x4 board, a 9x9 board, \
-     or a 16x16 board? Respond with (4), (9), or (16).";
+    "Hello, welcome to Sudoku! Would you like to solve a 4x4 board, a 9x9 \
+     board, or a 16x16 board? Respond with (4), (9), or (16).";
   let chosen_size = ref (read_line ()) in
   while !chosen_size <> "4" && !chosen_size <> "9" && !chosen_size <> "16" do
-    print_endline "That wasn't a valid input, try again. Respond with (4), (9), or (16).";
+    print_endline
+      "That wasn't a valid input, try again. Respond with (4), (9), or (16).";
     chosen_size := read_line ()
   done;
   let chosen_int = int_of_string !chosen_size in
 
-  let board = match chosen_int with
+  let board =
+    match chosen_int with
     | 4 -> four_board
     | 9 -> nine_board
     | _ -> sixteen_board
-  in 
-  
+  in
+
   print_endline "Here is your board:";
   print_endline (string_of_board board);
 
- let playing = ref true in 
+  let playing = ref true in
   while !playing do
     print_endline "\nEnter row, column, and value (e.g., '0 1 5') or 'quit':";
     let input = read_line () in
-    if input = "quit" then
-      playing := false
+    if input = "quit" then playing := false
     else
       try
-        let parts = String.split_on_char ' ' input in 
+        let parts = String.split_on_char ' ' input in
         match parts with
-        | [row_str; col_str; val_str] ->
+        | [ row_str; col_str; val_str ] -> (
             let row = int_of_string row_str in
             let col = int_of_string col_str in
             let value = int_of_string val_str in
             if value < 1 || value > chosen_int then
-              print_endline ("Error: Value must be between 1 and " ^ string_of_int chosen_int ^ "!")
+              print_endline
+                ("Error: Value must be between 1 and "
+               ^ string_of_int chosen_int ^ "!")
             else
-              (match board.(row).(col) with
-              | Initial _ -> print_endline "Error: Cannot modify an initial cell!"
+              match board.(row).(col) with
+              | Initial _ ->
+                  print_endline "Error: Cannot modify an initial cell!"
               | Empty | UserInput _ ->
                   board.(row).(col) <- UserInput value;
                   print_endline "\nUpdated board:";
