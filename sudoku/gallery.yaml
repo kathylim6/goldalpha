@@ -21,7 +21,7 @@ title: "Sudoku: an OCaml edition"
 # OK if this is a Cornell Github link, but public gallery viewers won't be able to see it.
 git-repo: "https://github.com/kathylim6/goldalpha"
 # Replace the URL with your own demo video.
-demo-video-url: TODO -- replace
+demo-video-url: https://drive.google.com/file/d/1t7tgjjzb2lyrEfnHYjQ87OoQwHfchHGo/view?usp=sharing 
 # Write a short, attention-grabbing description of your project.
 desc: >
   Our project is an interactive Sudoku game. It supports 4x4, 9x9, and
