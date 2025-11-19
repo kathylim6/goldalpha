@@ -23,11 +23,7 @@ val string_of_cell : cell -> int -> string
     - [Initial v] prints the integer [v]
     - [UserInput v] prints the integer [v]
 
-    All three are padded with trailing spaces to width [max_len].
-
-    @param c The cell to convert
-    @param max_len The width of the padded string
-    @return A padded string representation of the cell *)
+    All three are padded with trailing spaces to width [max_len].*)
 
 val string_of_row : cell array -> int -> string
 (** [string_of_row row root] converts a full Sudoku row into a formatted string.
@@ -39,12 +35,7 @@ val string_of_row : cell array -> int -> string
     - A trailing ["|"] appears at the end of the row.
 
     Example for a 4×4 board (root = 2):
-    {| . 1 | . 3 |}
-
-    @param row The array of cells in the row
-    @param root The subgrid dimension (2 for 4×4, 3 for 9×9, 4 for 16×16)
-    @return A single-line string representation of the row
-*)
+    {| . 1 | . 3 |}*)
 
 val string_of_board : cell array array -> string
 (** [string_of_board board] converts the entire Sudoku board into a printable
@@ -57,10 +48,7 @@ val string_of_board : cell array array -> string
     - Inserts horizontal divider lines made of dashes between subgrids and at
       the top/bottom of the board.
 
-    The output is a fully formatted human-readable Sudoku grid.
-
-    @param board The Sudoku board to convert
-    @return A formatted printable representation of the entire board *)
+    The output is a fully formatted human-readable Sudoku grid. *)
 
 val generate_board : int -> string
 (** [generate_board n] returns the formatted string of one of the predefined
@@ -71,7 +59,4 @@ val generate_board : int -> string
     - any other value → 16×16 board
 
     This function does not generate puzzles randomly; it simply selects from the
-    statically defined boards.
-
-    @param n The desired board size
-    @return A formatted Sudoku board as a string *)
+    statically defined boards. *)

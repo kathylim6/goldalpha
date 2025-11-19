@@ -348,10 +348,20 @@ let sixteen_board =
 let repeat_string s n = String.concat "" (List.init n (fun _ -> s))
 
 (** let [pad] is a helper function that takes in a string s and int max, padding
-    the appropriate amount of spaces on s for formatting*)
+    the appropriate amount of spaces on s for formatting. [max] must be greater
+    than 0*)
 let pad s max =
   let spaces = max - String.length s in
   s ^ repeat_string " " spaces
+
+(* in-line test cases for [pad] and [repeat_string] *)
+let%test _ = repeat_string "a" 3 = "aaa"
+let%test _ = repeat_string " " 3 = "   "
+let%test _ = repeat_string " " 1 = " "
+let%test _ = repeat_string " " 0 = ""
+let%test _ = pad "5" 3 = "5  "
+let%test _ = pad "3" 1 = "3"
+let%test _ = pad "3" 2 = "3 "
 
 (** let [string_of_cell] converts the cells of cell type into strings *)
 let string_of_cell c max_len =
