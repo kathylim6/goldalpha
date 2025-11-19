@@ -3,6 +3,7 @@ type cell =
   | Empty
   | UserInput of int
 
+(* Statically typed into four_board *)
 let four_board =
   [|
     [| Empty; Initial 3; Empty; Initial 2 |];
@@ -11,6 +12,7 @@ let four_board =
     [| Initial 3; Initial 4; Empty; Empty |];
   |]
 
+(* Statically typed into nine_board *)
 let nine_board =
   [|
     [|
@@ -48,6 +50,7 @@ let nine_board =
     |];
   |]
 
+(* Statically typed into sixteen_board *)
 let sixteen_board =
   [|
     [|
@@ -340,25 +343,39 @@ let sixteen_board =
     |];
   |]
 
-let string_of_cell = function
-  | Empty -> "."
-  | Initial v -> string_of_int v
-  | UserInput v -> string_of_int v
+(** let [repeat_string] is a helper function used to print multiple empty spaces
+    for proper lining of Sudoku map*)
+let repeat_string s n = String.concat "" (List.init n (fun _ -> s))
 
+(** let [pad] is a helper function that takes in a string s and int max, padding
+    the appropriate amount of spaces on s for formatting*)
+let pad s max =
+  let spaces = max - String.length s in
+  s ^ repeat_string " " spaces
+
+(** let [string_of_cell] converts the cells of cell type into strings *)
+let string_of_cell c max_len =
+  match c with
+  | Empty -> pad "." max_len
+  | Initial v -> pad (string_of_int v) max_len
+  | UserInput v -> pad (string_of_int v) max_len
+
+(** let [string_of_row] converts a row of the board from cell array format into
+    a single-line string *)
 let string_of_row input_row root =
-  (* input_row |> Array.to_list |> List.map string_of_cell |> String.concat "
-     " *)
   let row_list = Array.to_list input_row in
+  let max_len = String.length (string_of_int (root * root)) in
   String.concat " "
     (List.mapi
        (fun i x ->
-         if i mod root = 0 then "|" ^ string_of_cell x
-         else if i = (root * root) - 1 then string_of_cell x ^ "|"
-         else string_of_cell x)
+         if i mod root = 0 then "|" ^ string_of_cell x max_len
+         else if i = (root * root) - 1 then string_of_cell x max_len ^ "|"
+         else string_of_cell x max_len)
        row_list)
 
-let repeat_string s n = String.concat "" (List.init n (fun _ -> s))
-
+(** let [string_of_board] is a function that converts the entire cell array
+    array board into a printable string by calling helper functions such as let
+    [string_of_row] and let [string_of_cell]*)
 let string_of_board input_board : string =
   let board_size = float_of_int (Array.length input_board) in
   let root = int_of_float (sqrt board_size) in
@@ -367,15 +384,23 @@ let string_of_board input_board : string =
     (List.mapi
        (fun i x ->
          if i mod root = 0 then
-           repeat_string "-" ((int_of_float board_size * 2) + root)
+           repeat_string "-"
+             (int_of_float board_size
+              * (2 + abs (1 - String.length (string_of_int (root * root))))
+             + root)
            ^ "\n" ^ string_of_row x root ^ "\n"
          else if i = (root * root) - 1 then
            string_of_row x root ^ "\n"
-           ^ repeat_string "-" ((int_of_float board_size * 2) + root)
+           ^ repeat_string "-"
+               (int_of_float board_size
+                * (2 + abs (1 - String.length (string_of_int (root * root))))
+               + root)
            ^ "\n"
          else string_of_row x root ^ "\n")
        board_list)
 
+(** let [generate_board] prints statically typed in boards. Further
+    implementations will randomize the boards *)
 let generate_board num =
   match num with
   | 4 -> string_of_board four_board
