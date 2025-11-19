@@ -1,2 +1,10 @@
 (test
- (name test_sudoku))
+ (name test_sudoku)
+ (libraries ounit2 sudoku)
+ (preprocess
+  (pps ppx_inline_test)))
+
+(cram
+ (deps
+  ../bin/main.exe
+  (glob_files_rec ../data/*)))
