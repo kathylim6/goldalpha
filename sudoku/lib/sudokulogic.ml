@@ -416,3 +416,38 @@ let generate_board num =
   | 4 -> string_of_board four_board
   | 9 -> string_of_board nine_board
   | _ -> string_of_board sixteen_board
+
+(** let [generate_board] prints statically typed in boards. Further
+    implementations will randomize the boards *)
+let generate_board num =
+  match num with
+  | 4 -> string_of_board four_board
+  | 9 -> string_of_board nine_board
+  | _ -> string_of_board sixteen_board
+
+let convert board : (int * int * int) array =
+  let board_dim = Array.length board in
+  let result = Array.make (board_dim * board_dim) (0, 0, 0) in
+  let k = ref 0 in
+  for row = 0 to board_dim - 1 do
+    for col = 0 to board_dim - 1 do
+      result.(!k) <- (row, col, board.(row).(col));
+      incr k
+    done
+  done;
+  result
+
+let backtracking board = 1
+
+let make_unique board =
+  Random.self_init ();
+  Array.shuffle ~rand:(fun n -> Random.int n) board;
+
+  for cell = 0 to Array.length board - 1 do
+    let x, y, number = board.(cell) in
+    if number != -1 then begin
+      board.(cell) <- (x, y, -1);
+      let num_sol = backtracking board in
+      if num_sol > 1 then board.(cell) <- (x, y, number)
+    end
+  done
