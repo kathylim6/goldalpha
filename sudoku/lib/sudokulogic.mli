@@ -60,3 +60,5 @@ val generate_board : int -> string
 
     This function does not generate puzzles randomly; it simply selects from the
     statically defined boards. *)
+
+val make_unique : cell array -> cell array

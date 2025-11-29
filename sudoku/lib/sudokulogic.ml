@@ -409,45 +409,81 @@ let string_of_board input_board : string =
          else string_of_row x root ^ "\n")
        board_list)
 
-(** let [generate_board] prints statically typed in boards. Further
-    implementations will randomize the boards *)
+(** [generate_board] prints statically typed in boards. Further implementations
+    will randomize the boards *)
 let generate_board num =
   match num with
   | 4 -> string_of_board four_board
   | 9 -> string_of_board nine_board
   | _ -> string_of_board sixteen_board
 
-(** let [generate_board] prints statically typed in boards. Further
-    implementations will randomize the boards *)
-let generate_board num =
-  match num with
-  | 4 -> string_of_board four_board
-  | 9 -> string_of_board nine_board
-  | _ -> string_of_board sixteen_board
-
-let convert board : (int * int * int) array =
+(** [convert_to_tuple] takes in a board represented by an array of array of
+    cells and outputs an array of tuples of 3 ints. The first two ints represent
+    the coordinate position of the cell in the sudoku board, and the third int
+    represents the value that is stored in the cell. [convert_to_tuple] is used
+    as a helper in the creation of the puzzle. *)
+let convert_to_tuple (board : cell array array) : (int * int * int) array =
   let board_dim = Array.length board in
   let result = Array.make (board_dim * board_dim) (0, 0, 0) in
   let k = ref 0 in
   for row = 0 to board_dim - 1 do
     for col = 0 to board_dim - 1 do
-      result.(!k) <- (row, col, board.(row).(col));
+      let number =
+        match board.(row).(col) with
+        | Initial x -> x
+        | _ ->
+            failwith
+              "Should only call [convert_to_tuple] on array of all initial \
+               values"
+      in
+      result.(!k) <- (row, col, number);
       incr k
     done
   done;
   result
 
-let backtracking board = 1
+(** [convert_to_cell] takes an input board which represents a new random puzzle
+    with missing values that has a unique solution. The input board will be
+    represented as an array of tuples, where the first two integer values in the
+    tuple represents the coordinate values, and the second value represents the
+    number in the cell. The input array will not be in order of coordinate
+    values. If the number in the cell is -1, then this cell is empty.
 
-let make_unique board =
+    [convert_to_cell] makes this input board an array of array of cells so that
+    it can be outputted to the user. *)
+let convert_to_cell (board : (int * int * int) array) : cell array array =
+  let board_dim = int_of_float (sqrt (float_of_int (Array.length board))) in
+  let result = Array.make board_dim (Array.make board_dim Empty) in
+  for x = 0 to Array.length board - 1 do
+    let tuple_rep = board.(x) in
+    let cord_x, cord_y, number = tuple_rep in
+    let number_rep =
+      match number with
+      | -1 -> Empty
+      | x -> Initial x
+    in
+    result.(cord_x).(cord_y) <- number_rep
+  done;
+  result
+
+let backtracking board = failwith "Unimplemented"
+
+(** [make_unique] takes in an array of cells that represents a completely filled
+    in, valid board. It uses an algorithm to modify this board to make a new
+    random puzzle that has a unique solution which will then given to the user*)
+let make_unique (board : cell array array) =
   Random.self_init ();
   Array.shuffle ~rand:(fun n -> Random.int n) board;
 
+  let tuple_board = convert_to_tuple board in
+
   for cell = 0 to Array.length board - 1 do
-    let x, y, number = board.(cell) in
+    let x, y, number = tuple_board.(cell) in
     if number != -1 then begin
-      board.(cell) <- (x, y, -1);
-      let num_sol = backtracking board in
-      if num_sol > 1 then board.(cell) <- (x, y, number)
+      tuple_board.(cell) <- (x, y, -1);
+      let num_sol = backtracking tuple_board in
+      if num_sol > 1 then tuple_board.(cell) <- (x, y, number)
     end
-  done
+  done;
+  let new_board = convert_to_cell tuple_board in
+  new_board
