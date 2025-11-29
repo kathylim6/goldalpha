@@ -12,6 +12,98 @@ let four_board =
     [| Initial 3; Initial 4; Empty; Empty |];
   |]
 
+(* Ensures that different random boards are generated each time the program
+   runs *)
+let () = Random.self_init ()
+
+(* Makes a generic, filled sudoku board *)
+let make_base_board size box_size =
+  Array.init size (fun row_index ->
+      Array.init size (fun col_index ->
+          let base =
+            (row_index * box_size) + (row_index / box_size) + col_index
+          in
+          let value = (base mod size) + 1 in
+          value))
+
+(* Swaps rows in a sudoku board *)
+let swap_rows board row1 row2 =
+  let temp = board.(row1) in
+  board.(row1) <- board.(row2);
+  board.(row2) <- temp
+
+(* Swaps columns in a sudoku board *)
+let swap_cols board col1 col2 =
+  let size = Array.length board in
+  let row_index = ref 0 in
+  while !row_index < size do
+    let temp = board.(!row_index).(col1) in
+    board.(!row_index).(col1) <- board.(!row_index).(col2);
+    board.(!row_index).(col2) <- temp;
+    row_index := !row_index + 1
+  done
+
+(* Shuffles rows that share a box -- boxes are either 2x2 (for a 4x4 board), 3x3
+   (for a 9x9 board), or 4x4 (for a 16x16 board) *)
+let shuffle_rows_within_group board box_size =
+  let size = Array.length board in
+  let number_of_row_groups = size / box_size in
+  let row_group = ref 0 in
+  while !row_group < number_of_row_groups do
+    let first_row_of_group = !row_group * box_size in
+    let position_in_group = ref 0 in
+    while !position_in_group < box_size do
+      let random_position_in_group =
+        !position_in_group + Random.int (box_size - !position_in_group)
+      in
+      let row1 = first_row_of_group + !position_in_group in
+      let row2 = first_row_of_group + random_position_in_group in
+      swap_rows board row1 row2;
+      position_in_group := !position_in_group + 1
+    done;
+    row_group := !row_group + 1
+  done
+
+(* Shuffles columns that share a box -- boxes are either 2x2 (for a 4x4 board),
+   3x3 (for a 9x9 board), or 4x4 (for a 16x16 board) *)
+let shuffle_cols_within_group board box_size =
+  let size = Array.length board in
+  let number_of_col_groups = size / box_size in
+  let col_group = ref 0 in
+  while !col_group < number_of_col_groups do
+    let first_col_of_group = !col_group * box_size in
+    let position_in_group = ref 0 in
+    while !position_in_group < box_size do
+      let random_position_in_group =
+        !position_in_group + Random.int (box_size - !position_in_group)
+      in
+      let col1 = first_col_of_group + !position_in_group in
+      let col2 = first_col_of_group + random_position_in_group in
+      swap_cols board col1 col2;
+      position_in_group := !position_in_group + 1
+    done;
+    col_group := !col_group + 1
+  done
+
+(* Makes a sudoku board using our predefined shuffling techniques, converts from
+   an integer board to a cell board *)
+let make_random_board size box_size =
+  let int_board = make_base_board size box_size in
+  shuffle_rows_within_group int_board box_size;
+  shuffle_cols_within_group int_board box_size;
+  Array.init size (fun row_index ->
+      Array.init size (fun col_index ->
+          Initial int_board.(row_index).(col_index)))
+
+(* Creates a randomly generated, filled 4x4 sudoku board *)
+let make_four_board () = make_random_board 4 2
+
+(* Creates a randomly generated, filled 9x9 sudoku board *)
+let make_nine_board () = make_random_board 9 3
+
+(* Creates a randomly generated, filled 16x16 sudoku board *)
+let make_sixteen_board () = make_random_board 16 4
+
 (* Statically typed into nine_board *)
 let nine_board =
   [|

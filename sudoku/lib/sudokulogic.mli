@@ -15,6 +15,15 @@ val nine_board : cell array array
 val sixteen_board : cell array array
 (** A fixed 16×16 Sudoku board, statically defined in the implementation. *)
 
+val make_four_board : unit -> cell array array
+(** Creates a randomly generated, filled 4x4 sudoku board*)
+
+val make_nine_board : unit -> cell array array
+(** Creates a randomly generated, filled 9x9 sudoku board*)
+
+val make_sixteen_board : unit -> cell array array
+(** Creates a randomly generated, filled 16x6 sudoku board*)
+
 val string_of_cell : cell -> int -> string
 (** [string_of_cell c max_len] returns a string representing the cell [c],
     padded with spaces so that its total width equals [max_len].
