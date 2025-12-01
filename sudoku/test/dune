@@ -2,7 +2,9 @@
  (name test_sudoku)
  (libraries ounit2 sudoku)
  (preprocess
-  (pps ppx_inline_test)))
+  (pps ppx_inline_test))
+ (instrumentation
+  (backend bisect_ppx)))
 
 (cram
  (deps

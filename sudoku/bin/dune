@@ -1,4 +1,6 @@
 (executable
  (public_name sudoku)
  (name main)
- (libraries sudoku))
+ (libraries sudoku)
+ (instrumentation
+  (backend bisect_ppx)))
