@@ -501,81 +501,127 @@ let string_of_board input_board : string =
          else string_of_row x root ^ "\n")
        board_list)
 
-(** [generate_board] prints statically typed in boards. Further implementations
-    will randomize the boards *)
-let generate_board num =
-  match num with
-  | 4 -> string_of_board four_board
-  | 9 -> string_of_board nine_board
-  | _ -> string_of_board sixteen_board
-
-(** [convert_to_tuple] takes in a board represented by an array of array of
-    cells and outputs an array of tuples of 3 ints. The first two ints represent
-    the coordinate position of the cell in the sudoku board, and the third int
-    represents the value that is stored in the cell. [convert_to_tuple] is used
-    as a helper in the creation of the puzzle. *)
-let convert_to_tuple (board : cell array array) : (int * int * int) array =
+(** [convert_to_cords] takes in a board represented by an array of array of
+    cells and outputs an array of tuples of coordinates. The first two ints
+    represent the coordinate position of the cell in the sudoku board.
+    [convert_to_cords] is used as a helper in the creation of the puzzle. *)
+let convert_to_cords (board : cell array array) : (int * int) array =
   let board_dim = Array.length board in
-  let result = Array.make (board_dim * board_dim) (0, 0, 0) in
+  let result = Array.make (board_dim * board_dim) (0, 0) in
   let k = ref 0 in
   for row = 0 to board_dim - 1 do
     for col = 0 to board_dim - 1 do
-      let number =
-        match board.(row).(col) with
-        | Initial x -> x
-        | _ ->
-            failwith
-              "Should only call [convert_to_tuple] on array of all initial \
-               values"
-      in
-      result.(!k) <- (row, col, number);
+      result.(!k) <- (row, col);
       incr k
     done
   done;
   result
 
-(** [convert_to_cell] takes an input board which represents a new random puzzle
-    with missing values that has a unique solution. The input board will be
-    represented as an array of tuples, where the first two integer values in the
-    tuple represents the coordinate values, and the second value represents the
-    number in the cell. The input array will not be in order of coordinate
-    values. If the number in the cell is -1, then this cell is empty.
+let valid (board : cell array array) (check : int) (pos : int * int) : bool =
+  let row = fst pos in
+  let col = snd pos in
+  let dim = Array.length board in
 
-    [convert_to_cell] makes this input board an array of array of cells so that
-    it can be outputted to the user. *)
-let convert_to_cell (board : (int * int * int) array) : cell array array =
-  let board_dim = int_of_float (sqrt (float_of_int (Array.length board))) in
-  let result = Array.make board_dim (Array.make board_dim Empty) in
-  for x = 0 to Array.length board - 1 do
-    let tuple_rep = board.(x) in
-    let cord_x, cord_y, number = tuple_rep in
-    let number_rep =
-      match number with
-      | -1 -> Empty
-      | x -> Initial x
-    in
-    result.(cord_x).(cord_y) <- number_rep
-  done;
-  result
+  (* Helper: return true if a cell contains the number check *)
+  let cell_matches n =
+    match n with
+    | Initial x -> x = check
+    | Empty -> false
+    | UserInput _ -> failwith "Unexpected user input cell"
+  in
+  try
+    (* Row check *)
+    for c = 0 to dim - 1 do
+      if c <> col && cell_matches board.(row).(c) then raise Exit
+    done;
 
-let backtracking board = failwith "Unimplemented"
+    (* Column check *)
+    for r = 0 to dim - 1 do
+      if r <> row && cell_matches board.(r).(col) then raise Exit
+    done;
+
+    (* Subgrid size: 4 x 4 -> 2, 9×9 → 3, 16×16 → 4 *)
+    let sub = int_of_float (sqrt (float_of_int dim)) in
+
+    let box_r = row / sub * sub in
+    let box_c = col / sub * sub in
+
+    (* Subgrid check *)
+    for r = box_r to box_r + sub - 1 do
+      for c = box_c to box_c + sub - 1 do
+        if (not (r = row && c = col)) && cell_matches board.(r).(c) then
+          raise Exit
+      done
+    done;
+
+    true
+  with Exit -> false
+
+let find_empty (board : cell array array) : (int * int) option =
+  let dim = Array.length board in
+  let rec search_row r =
+    if r = dim then None
+    else
+      let rec search_col c =
+        if c = dim then search_row (r + 1)
+        else
+          match board.(r).(c) with
+          | Empty -> Some (r, c)
+          | Initial _ -> search_col (c + 1)
+          | UserInput _ -> failwith "Unexpected user input cell"
+      in
+      search_col 0
+  in
+  search_row 0
+
+(* Helper: count solutions, stopping at limit *)
+let count_solutions board limit =
+  let dim = Array.length board in
+  let rec backtrack count =
+    if count >= limit then count
+    else
+      match find_empty board with
+      | None -> count + 1
+      | Some (row, col) ->
+          let total = ref count in
+          for check = 1 to dim do
+            if !total < limit && valid board check (row, col) then begin
+              board.(row).(col) <- Initial check;
+              total := backtrack !total;
+              board.(row).(col) <- Empty
+            end
+          done;
+          !total
+  in
+  backtrack 0
 
 (** [make_unique] takes in an array of cells that represents a completely filled
     in, valid board. It uses an algorithm to modify this board to make a new
     random puzzle that has a unique solution which will then given to the user*)
 let make_unique (board : cell array array) =
+  let coords = convert_to_cords board in
   Random.self_init ();
-  Array.shuffle ~rand:(fun n -> Random.int n) board;
+  Array.shuffle ~rand:(fun n -> Random.int n) coords;
 
-  let tuple_board = convert_to_tuple board in
+  for index = 0 to Array.length coords - 1 do
+    let x, y = coords.(index) in
+    let number =
+      match board.(x).(y) with
+      | Initial n -> n
+      | _ -> failwith "Unexpected non-initial cell"
+    in
+    board.(x).(y) <- Empty;
 
-  for cell = 0 to Array.length board - 1 do
-    let x, y, number = tuple_board.(cell) in
-    if number != -1 then begin
-      tuple_board.(cell) <- (x, y, -1);
-      let num_sol = backtracking tuple_board in
-      if num_sol > 1 then tuple_board.(cell) <- (x, y, number)
-    end
+    let num_solutions = count_solutions board 2 in
+    if num_solutions <> 1 then board.(x).(y) <- Initial number
   done;
-  let new_board = convert_to_cell tuple_board in
-  new_board
+  board
+
+(** [generate_board] prints a new random Sudoku puzzle to solve, based on either
+    dimensions 4, 9, or 16 *)
+let generate_board num =
+  match num with
+  | 4 -> make_unique (make_four_board ())
+  | 9 -> make_unique (make_nine_board ())
+  | 16 -> make_unique (make_sixteen_board ())
+  | _ -> failwith "Only 4x4, 9x9, and 16x16 boards supported"

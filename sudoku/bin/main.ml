@@ -14,9 +14,10 @@ let () =
 
   let board =
     match chosen_int with
-    | 4 -> four_board
-    | 9 -> nine_board
-    | _ -> sixteen_board
+    | 4 -> generate_board 4
+    | 9 -> generate_board 9
+    | 16 -> generate_board 16
+    | _ -> failwith "Only 4x4, 9x9, or 16x16 boards supported"
   in
 
   print_endline "Here is your board:";

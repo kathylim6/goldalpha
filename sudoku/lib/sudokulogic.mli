@@ -59,15 +59,13 @@ val string_of_board : cell array array -> string
 
     The output is a fully formatted human-readable Sudoku grid. *)
 
-val generate_board : int -> string
-(** [generate_board n] returns the formatted string of one of the predefined
-    Sudoku boards, depending on [n]:
+val generate_board : int -> cell array array
+(** [generate_board n] returns 2D cell array of a Sudoku board Sudoku boards,
+    depending on [n]:
 
     - [n = 4] → 4×4 board
     - [n = 9] → 9×9 board
-    - any other value → 16×16 board
+    - [n = 16] → 16×16 board
+    - any other n will result in an failure
 
-    This function does not generate puzzles randomly; it simply selects from the
-    statically defined boards. *)
-
-val make_unique : cell array -> cell array
+    This function generate puzzles randomly *)
