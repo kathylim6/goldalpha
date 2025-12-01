@@ -278,8 +278,8 @@ let suite =
            let equality = !check_distinct in
            assert_equal true equality ~printer:string_of_bool );
          (* ---------- 16x16 tests ---------- *)
-         ( "make_sixteen_board: board is 16x16" >:: fun _ ->
-           let board = make_sixteen_board () in
+         ( "generate_board 16: board is 16x16" >:: fun _ ->
+           let board = generate_board 16 in
            let num_rows = Array.length board in
            let check_cols = ref true in
            let row_index = ref 0 in
@@ -289,30 +289,8 @@ let suite =
            done;
            let equality = num_rows = 16 && !check_cols in
            assert_equal true equality ~printer:string_of_bool );
-         ( "make_sixteen_board: all cells are Initial" >:: fun _ ->
-           let board = make_sixteen_board () in
-           let allowed_cells = ref [] in
-           let value = ref 1 in
-           while !value <= 16 do
-             allowed_cells := Initial !value :: !allowed_cells;
-             value := !value + 1
-           done;
-           let all_initial = ref true in
-           let row_index = ref 0 in
-           while !row_index < 16 do
-             let col_index = ref 0 in
-             while !col_index < 16 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if not (List.mem current_cell !allowed_cells) then
-                 all_initial := false;
-               col_index := !col_index + 1
-             done;
-             row_index := !row_index + 1
-           done;
-           let equality = !all_initial in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "make_sixteen_board: all values in 1..16" >:: fun _ ->
-           let board = make_sixteen_board () in
+         ( "generate_board 16: all values in 1..16" >:: fun _ ->
+           let board = generate_board 16 in
            let allowed_cells = ref [] in
            let value = ref 1 in
            while !value <= 16 do
@@ -333,7 +311,7 @@ let suite =
            done;
            let equality = !all_in_range in
            assert_equal true equality ~printer:string_of_bool );
-         ( "make_sixteen_board: each row has distinct values" >:: fun _ ->
+         ( "generate_board 16: each row has distinct values" >:: fun _ ->
            let board = make_sixteen_board () in
            let check_distinct = ref true in
            let row_index = ref 0 in
@@ -350,8 +328,8 @@ let suite =
            done;
            let equality = !check_distinct in
            assert_equal true equality ~printer:string_of_bool );
-         ( "make_sixteen_board: each column has distinct values" >:: fun _ ->
-           let board = make_sixteen_board () in
+         ( "generate_board 16: each column has distinct values" >:: fun _ ->
+           let board = generate_board 16 in
            let check_distinct = ref true in
            let col_index = ref 0 in
            while !col_index < 16 do
@@ -367,8 +345,8 @@ let suite =
            done;
            let equality = !check_distinct in
            assert_equal true equality ~printer:string_of_bool );
-         ( "make_sixteen_board: each 4x4 box has distinct values" >:: fun _ ->
-           let board = make_sixteen_board () in
+         ( "generate_board 16: each 4x4 box has distinct values" >:: fun _ ->
+           let board = generate_board 16 in
            let check_distinct = ref true in
            let box_row_index = ref 0 in
            while !box_row_index < 4 do
