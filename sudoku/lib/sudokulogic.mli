@@ -1,19 +1,13 @@
-(** A cell in a Sudoku board. *)
-type cell =
-  | Initial of int
-      (** A fixed, pre-filled value that is part of the puzzle’s initial state.
-      *)
-  | Empty  (** An empty cell with no value assigned. *)
-  | UserInput of int  (** A value supplied by the user during gameplay. *)
+open Sudokutypes
 
-val four_board : cell array array
-(** A fixed 4×4 Sudoku board, statically defined in the implementation. *)
+(* val four_board : cell array array (** A fixed 4×4 Sudoku board, statically
+   defined in the implementation. *)
 
-val nine_board : cell array array
-(** A fixed 9×9 Sudoku board, statically defined in the implementation. *)
+   val nine_board : cell array array (** A fixed 9×9 Sudoku board, statically
+   defined in the implementation. *)
 
-val sixteen_board : cell array array
-(** A fixed 16×16 Sudoku board, statically defined in the implementation. *)
+   val sixteen_board : cell array array * A fixed 16×16 Sudoku board, statically
+   defined in the implementation. *)
 
 val make_four_board : unit -> cell array array
 (** Creates a randomly generated, filled 4x4 sudoku board*)
