@@ -2,5 +2,4 @@
  (public_name sudoku)
  (name main)
  (libraries sudoku)
- (instrumentation
-  (backend bisect_ppx)))
+ (instrumentation (backend bisect_ppx)))
