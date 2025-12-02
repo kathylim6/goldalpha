@@ -1,3 +1,5 @@
+open Csv
+
 type cell =
   | Initial of int
   | Empty
@@ -6,299 +8,6 @@ type cell =
 (** [let ()] ensures that different random boards are generated each time the
     program runs *)
 let () = Random.self_init ()
-
-(* statically typed 16x16 board *)
-let sixteen_board =
-  [|
-    [|
-      Initial 14;
-      Empty;
-      Initial 9;
-      Initial 8;
-      Empty;
-      Empty;
-      Empty;
-      Initial 4;
-      Initial 1;
-      Initial 5;
-      Empty;
-      Empty;
-      Initial 2;
-      Initial 6;
-      Empty;
-      Initial 16;
-    |];
-    [|
-      Empty;
-      Initial 7;
-      Empty;
-      Initial 16;
-      Initial 3;
-      Empty;
-      Initial 8;
-      Initial 13;
-      Initial 12;
-      Initial 4;
-      Initial 11;
-      Empty;
-      Initial 15;
-      Initial 14;
-      Empty;
-      Empty;
-    |];
-    [|
-      Initial 13;
-      Empty;
-      Initial 4;
-      Empty;
-      Empty;
-      Empty;
-      Empty;
-      Empty;
-      Initial 15;
-      Empty;
-      Initial 14;
-      Initial 10;
-      Initial 5;
-      Empty;
-      Empty;
-      Empty;
-    |];
-    [|
-      Initial 11;
-      Empty;
-      Initial 10;
-      Initial 6;
-      Empty;
-      Initial 15;
-      Initial 1;
-      Empty;
-      Initial 2;
-      Initial 16;
-      Empty;
-      Initial 9;
-      Initial 7;
-      Empty;
-      Initial 3;
-      Empty;
-    |];
-    [|
-      Empty;
-      Initial 2;
-      Initial 7;
-      Initial 1;
-      Initial 16;
-      Initial 8;
-      Empty;
-      Initial 12;
-      Initial 9;
-      Initial 11;
-      Empty;
-      Empty;
-      Empty;
-      Empty;
-      Empty;
-      Initial 10;
-    |];
-    [|
-      Initial 16;
-      Initial 10;
-      Initial 13;
-      Empty;
-      Initial 9;
-      Initial 4;
-      Empty;
-      Initial 1;
-      Initial 5;
-      Initial 8;
-      Empty;
-      Empty;
-      Initial 12;
-      Empty;
-      Initial 6;
-      Initial 7;
-    |];
-    [|
-      Initial 12;
-      Empty;
-      Empty;
-      Initial 5;
-      Empty;
-      Initial 11;
-      Empty;
-      Empty;
-      Empty;
-      Initial 2;
-      Empty;
-      Initial 7;
-      Empty;
-      Initial 3;
-      Empty;
-      Initial 9;
-    |];
-    [|
-      Initial 9;
-      Empty;
-      Empty;
-      Empty;
-      Initial 5;
-      Initial 13;
-      Empty;
-      Empty;
-      Initial 10;
-      Initial 12;
-      Initial 1;
-      Empty;
-      Empty;
-      Initial 16;
-      Initial 2;
-      Initial 4;
-    |];
-    [|
-      Empty;
-      Empty;
-      Empty;
-      Empty;
-      Initial 10;
-      Empty;
-      Initial 12;
-      Initial 14;
-      Initial 3;
-      Initial 13;
-      Initial 4;
-      Empty;
-      Initial 16;
-      Initial 8;
-      Empty;
-      Empty;
-    |];
-    [|
-      Empty;
-      Initial 8;
-      Empty;
-      Empty;
-      Empty;
-      Empty;
-      Empty;
-      Empty;
-      Empty;
-      Initial 15;
-      Initial 12;
-      Empty;
-      Empty;
-      Initial 9;
-      Empty;
-      Initial 6;
-    |];
-    [|
-      Initial 1;
-      Initial 13;
-      Initial 16;
-      Initial 2;
-      Empty;
-      Initial 6;
-      Empty;
-      Initial 9;
-      Initial 11;
-      Initial 14;
-      Empty;
-      Empty;
-      Initial 3;
-      Empty;
-      Initial 4;
-      Empty;
-    |];
-    [|
-      Initial 3;
-      Initial 11;
-      Initial 12;
-      Empty;
-      Initial 4;
-      Empty;
-      Empty;
-      Empty;
-      Initial 6;
-      Empty;
-      Initial 7;
-      Initial 8;
-      Initial 13;
-      Empty;
-      Empty;
-      Initial 14;
-    |];
-    [|
-      Initial 10;
-      Empty;
-      Empty;
-      Initial 14;
-      Empty;
-      Initial 7;
-      Initial 5;
-      Initial 2;
-      Initial 13;
-      Initial 6;
-      Empty;
-      Initial 4;
-      Initial 11;
-      Initial 1;
-      Initial 8;
-      Empty;
-    |];
-    [|
-      Empty;
-      Empty;
-      Initial 11;
-      Initial 12;
-      Initial 13;
-      Empty;
-      Empty;
-      Initial 3;
-      Empty;
-      Empty;
-      Initial 15;
-      Empty;
-      Initial 9;
-      Initial 7;
-      Empty;
-      Initial 2;
-    |];
-    [|
-      Empty;
-      Initial 9;
-      Initial 1;
-      Empty;
-      Initial 15;
-      Empty;
-      Initial 6;
-      Empty;
-      Empty;
-      Empty;
-      Initial 2;
-      Initial 11;
-      Initial 4;
-      Empty;
-      Empty;
-      Empty;
-    |];
-    [|
-      Empty;
-      Initial 4;
-      Initial 3;
-      Empty;
-      Empty;
-      Empty;
-      Initial 10;
-      Initial 8;
-      Empty;
-      Empty;
-      Empty;
-      Initial 12;
-      Empty;
-      Initial 13;
-      Empty;
-      Empty;
-    |];
-  |]
 
 (** [let make_base_board] makes a generic, filled sudoku board *)
 let make_base_board size box_size =
@@ -385,9 +94,34 @@ let make_four_board () = make_random_board 4 2
 (* Creates a randomly generated, filled 9x9 sudoku board *)
 let make_nine_board () = make_random_board 9 3
 
+let convert_csv (data : string list list) =
+  data
+  |> List.map (fun row ->
+         row
+         |> List.map (function
+              | "0" -> Empty
+              | s -> Initial (int_of_string s))
+         |> Array.of_list)
+  |> Array.of_list
+
+let%test "convert_csv parses a simple 2x3 CSV correctly" =
+  let csv = [ [ "1"; "0"; "5" ]; [ "0"; "16"; "3" ] ] in
+  let result = convert_csv csv in
+  result
+  = [| [| Initial 1; Empty; Initial 5 |]; [| Empty; Initial 16; Initial 3 |] |]
+
+let%test "convert_csv handles only zeros" =
+  let csv = [ [ "0"; "0" ]; [ "0"; "0" ] ] in
+  let r = convert_csv csv in
+  r = [| [| Empty; Empty |]; [| Empty; Empty |] |]
+
 (* Randomly chooses one of the statically-typed, partially filled 16x16 sudoku
    board *)
-let make_sixteen_board () = sixteen_board
+let make_sixteen_board () =
+  let rand_int = 1 + Random.int 10 in
+  let filepath = "data/16board" ^ string_of_int rand_int ^ ".csv" in
+  let data = Csv.load filepath in
+  convert_csv data
 
 (** let [repeat_string] is a helper function used to print multiple empty spaces
     for proper lining of Sudoku map*)
