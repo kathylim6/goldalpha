@@ -160,31 +160,40 @@ let test_randomness_produces_variety _ =
   assert_bool "Randomness should produce more than one distinct output"
     (List.length uniq > 1)
 
-(* tests for make_sixteen_board 16 *)
-let test_board_size_16 _ =
-  let b = make_sixteen_board "../data/16board2.csv" in
-  assert_bool "board must be 16x16"
-    (Array.length b = 16 && Array.for_all (fun row -> Array.length row = 16) b)
+(* tests for make_sixteen_board 16; we iterate through all 10 filepaths to
+   ensure they are correct. *)
+let all_paths =
+  List.init 10 (fun i -> Printf.sprintf "../data/16board%d.csv" (i + 1))
 
-let test_valid_cells_16 _ =
-  let b = make_sixteen_board "../data/16board8.csv" in
-  assert_bool "all cells must be Initial 1..16 or Empty"
-    (Array.for_all (Array.for_all (valid_cell 16)) b)
+let is_16x16 b =
+  Array.length b = 16 && Array.for_all (fun row -> Array.length row = 16) b
 
-let test_rows_distinct_16 _ =
-  let b = make_sixteen_board "../data/16board10.csv" in
-  assert_bool "rows must have distinct non-empty values"
-    (rows_are_distinct 16 b)
+let all_cells_valid b = Array.for_all (Array.for_all (valid_cell 16)) b
+let rows_ok b = rows_are_distinct 16 b
+let cols_ok b = cols_are_distinct 16 b
+let boxes_ok b = boxes_are_distinct 16 b
 
-let test_cols_distinct_16 _ =
-  let b = make_sixteen_board "../data/16board1.csv" in
-  assert_bool "columns must have distinct non-empty values"
-    (cols_are_distinct 16 b)
-
-let test_boxes_distinct_16 _ =
-  let b = make_sixteen_board "../data/16board1.csv" in
-  assert_bool "4x4 boxes must have distinct non-empty values"
-    (boxes_are_distinct 16 b)
+let make_tests_for_file path =
+  let name_base = Filename.basename path in
+  [
+    ( name_base ^ " size_16x16" >:: fun _ ->
+      let b = make_sixteen_board path in
+      assert_bool "board must be 16x16" (is_16x16 b) );
+    ( name_base ^ " valid_cells" >:: fun _ ->
+      let b = make_sixteen_board path in
+      assert_bool "all cells must be Initial 1..16 or Empty" (all_cells_valid b)
+    );
+    ( name_base ^ " rows_distinct" >:: fun _ ->
+      let b = make_sixteen_board path in
+      assert_bool "rows must have distinct non-empty values" (rows_ok b) );
+    ( name_base ^ " cols_distinct" >:: fun _ ->
+      let b = make_sixteen_board path in
+      assert_bool "columns must have distinct non-empty values" (cols_ok b) );
+    ( name_base ^ " boxes_distinct" >:: fun _ ->
+      let b = make_sixteen_board path in
+      assert_bool "4x4 boxes must have distinct non-empty values" (boxes_ok b)
+    );
+  ]
 
 (* Suite *)
 let suite =
@@ -205,11 +214,8 @@ let suite =
          "ends_with" >:: test_ends_with;
          "number_in_range" >:: test_number_in_range;
          "randomness_variety" >:: test_randomness_produces_variety;
-         "size 16" >:: test_board_size_16;
-         "valid cells 16" >:: test_valid_cells_16;
-         "distinct rows 16" >:: test_rows_distinct_16;
-         "distinct columns 16" >:: test_cols_distinct_16;
-         "distinct boxes 16" >:: test_boxes_distinct_16;
+         "all 16x16 CSV board tests"
+         >::: List.flatten (List.map make_tests_for_file all_paths);
        ]
 
 let () = run_test_tt_main suite
