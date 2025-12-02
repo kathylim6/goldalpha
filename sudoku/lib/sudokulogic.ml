@@ -385,9 +385,90 @@ let make_four_board () = make_random_board 4 2
 (* Creates a randomly generated, filled 9x9 sudoku board *)
 let make_nine_board () = make_random_board 9 3
 
-(* Randomly chooses one of the statically-typed, partially filled 16x16 sudoku
-   board *)
-let make_sixteen_board () = sixteen_board
+(* in-line test for board generation *)
+
+let%test "make_four_board: board is 4x4" =
+  let b = make_four_board () in
+  Array.length b = 4 && Array.for_all (fun row -> Array.length row = 4) b
+
+let%test "make_four_board: all cells are Initial 1..4" =
+  let b = make_four_board () in
+  Array.for_all
+    (Array.for_all (function
+      | Initial v -> 1 <= v && v <= 4
+      | Empty -> false
+      | UserInput _ -> false))
+    b
+
+let%test "make_four_board: each row has distinct values" =
+  let b = make_four_board () in
+  Array.for_all
+    (fun row ->
+      let vals = Array.to_list row in
+      List.length vals = List.length (List.sort_uniq compare vals))
+    b
+
+let%test "make_four_board: each column has distinct values" =
+  let b = make_four_board () in
+  let get_col j = Array.init 4 (fun i -> b.(i).(j)) in
+  Array.for_all
+    (fun col ->
+      let vals = Array.to_list col in
+      List.length vals = List.length (List.sort_uniq compare vals))
+    (Array.init 4 get_col)
+
+let%test "make_four_board: each 2x2 box has distinct values" =
+  let b = make_four_board () in
+  let box r c =
+    [ b.(r).(c); b.(r).(c + 1); b.(r + 1).(c); b.(r + 1).(c + 1) ]
+  in
+  List.for_all
+    (fun cells ->
+      let len = List.length cells in
+      len = List.length (List.sort_uniq compare cells))
+    [ box 0 0; box 0 2; box 2 0; box 2 2 ]
+
+let%test "make_nine_board: board is 9x9" =
+  let b = make_nine_board () in
+  Array.length b = 9 && Array.for_all (fun row -> Array.length row = 9) b
+
+let%test "make_nine_board: all cells are Initial 1..9" =
+  let b = make_nine_board () in
+  Array.for_all
+    (Array.for_all (function
+      | Initial v -> 1 <= v && v <= 9
+      | Empty -> false
+      | UserInput _ -> false))
+    b
+
+let%test "make_nine_board: rows distinct" =
+  let b = make_nine_board () in
+  Array.for_all
+    (fun row ->
+      let vals = Array.to_list row in
+      List.length vals = List.length (List.sort_uniq compare vals))
+    b
+
+let%test "make_nine_board: cols distinct" =
+  let b = make_nine_board () in
+  let col j = Array.init 9 (fun i -> b.(i).(j)) in
+  Array.for_all
+    (fun col ->
+      let vals = Array.to_list col in
+      List.length vals = List.length (List.sort_uniq compare vals))
+    (Array.init 9 col)
+
+let%test "make_nine_board: 3x3 boxes distinct" =
+  let b = make_nine_board () in
+  let box r c =
+    List.concat
+      (List.init 3 (fun dr -> List.init 3 (fun dc -> b.(r + dr).(c + dc))))
+  in
+  List.for_all
+    (fun cells ->
+      List.length cells = List.length (List.sort_uniq compare cells))
+    (List.concat
+       (List.init 3 (fun br -> List.init 3 (fun bc -> box (3 * br) (3 * bc)))))
 
 (** let [repeat_string] is a helper function used to print multiple empty spaces
     for proper lining of Sudoku map*)
@@ -409,15 +490,36 @@ let%test _ = pad "5" 3 = "5  "
 let%test _ = pad "3" 1 = "3"
 let%test _ = pad "3" 2 = "3 "
 
-(** let [string_of_cell] converts the cells of cell type into strings *)
+(** [string_of_cell c max_len] returns a string representing the cell [c],
+    padded with spaces so that its total width equals [max_len].
+
+    - [Empty] is printed as ["."] - [Initial v] prints the integer [v] -
+      [UserInput v] prints the integer [v]
+
+    All three are padded with trailing spaces to width [max_len].*)
 let string_of_cell c max_len =
   match c with
   | Empty -> pad "." max_len
   | Initial v -> pad (string_of_int v) max_len
   | UserInput v -> pad (string_of_int v) max_len
 
-(** let [string_of_row] converts a row of the board from cell array format into
-    a single-line string *)
+(* in-line test for [string_of_cell] *)
+
+let%test "string_of_cell works on Empty/Initial/UserInput" =
+  string_of_cell Empty 1 = "."
+  && string_of_cell (Initial 3) 1 = "3"
+  && string_of_cell (UserInput 6) 1 = "6"
+  && string_of_cell (UserInput 12) 2 = "12"
+
+(** [string_of_row input_row root] converts a full Sudoku row into a 
+  formatted string.
+
+   Formatting rules (matching the implementation): - Each cell is printed using
+   [string_of_cell]. - Vertical bars ["|"] are inserted at the start of each
+   subgrid. A subgrid has width [root]. - A trailing ["|"] appears at the end of
+   the row.
+
+   Example for a 4×4 board (root = 2): {| . 1 | . 3 |} *)
 let string_of_row input_row root =
   let row_list = Array.to_list input_row in
   let max_len = String.length (string_of_int (root * root)) in
@@ -429,8 +531,16 @@ let string_of_row input_row root =
          else string_of_cell x max_len)
        row_list)
 
-(** let [string_of_board] is a function that converts the entire cell array
-    array board into a printable string by calling helper functions such as let
+(* in-line test for [string_of_row] *)
+let%test "string_of_row creates rows correctly" =
+  string_of_row [| Empty; Initial 1; Empty; Initial 3 |] 2 = "|. 1 |. 3|"
+  && string_of_row
+       [| Empty; UserInput 2; Initial 3; UserInput 1; Empty; Initial 9 |]
+       3
+     = "|. 2 3 |1 . 9"
+
+(** [string_of_board] is a function that converts the entire cell array array
+    board into a printable string by calling helper functions such as let
     [string_of_row] and let [string_of_cell]*)
 let string_of_board input_board : string =
   let board_size = float_of_int (Array.length input_board) in
@@ -470,6 +580,65 @@ let convert_to_cords (board : cell array array) : (int * int) array =
     done
   done;
   result
+
+(* in-line tests for [convert_to_cords] *)
+let%test "convert_to_cords: 4x4 board" =
+  let board =
+    [|
+      [| Empty; Initial 4; Empty; Empty |];
+      [| Empty; Empty; Empty; Empty |];
+      [| Empty; Empty; Initial 7; Empty |];
+      [| Empty; Empty; Empty; Empty |];
+    |]
+  in
+  convert_to_cords board
+  = [|
+      (0, 0);
+      (0, 1);
+      (0, 2);
+      (0, 3);
+      (1, 0);
+      (1, 1);
+      (1, 2);
+      (1, 3);
+      (2, 0);
+      (2, 1);
+      (2, 2);
+      (2, 3);
+      (3, 0);
+      (3, 1);
+      (3, 2);
+      (3, 3);
+    |]
+
+let%test "convert_to_cords 9x9 length" =
+  let board = Array.make_matrix 9 9 Empty in
+  let coords = convert_to_cords board in
+  Array.length coords = 81
+
+(* only spot-check a different coordinates for 9x9 boards and 16x16 boards*)
+let%test "convert_to_cords 9x9 ordering" =
+  let board = Array.make_matrix 9 9 (Initial 5) in
+  let coords = convert_to_cords board in
+  coords.(0) = (0, 0)
+  && coords.(1) = (0, 1)
+  && coords.(8) = (0, 8)
+  && coords.(9) = (1, 0)
+  && coords.(80) = (8, 8)
+
+let%test "convert_to_cords 16x16 length" =
+  let board = Array.make_matrix 16 16 Empty in
+  let coords = convert_to_cords board in
+  Array.length coords = 256
+
+let%test "convert_to_cords 16x16 ordering spot check" =
+  let board = Array.make_matrix 16 16 (Initial 3) in
+  let coords = convert_to_cords board in
+  coords.(0) = (0, 0)
+  && coords.(1) = (0, 1)
+  && coords.(15) = (0, 15)
+  && coords.(16) = (1, 0)
+  && coords.(255) = (15, 15)
 
 let valid (board : cell array array) (check : int) (pos : int * int) : bool =
   let row = fst pos in
@@ -571,6 +740,118 @@ let make_unique (board : cell array array) =
   done;
   board
 
+(* Inline tests for valid, find_empty, count_solutions, make_unique *)
+
+let full_4x4 : cell array array =
+  [|
+    [| Initial 1; Initial 2; Initial 3; Initial 4 |];
+    [| Initial 3; Initial 4; Initial 1; Initial 2 |];
+    [| Initial 2; Initial 1; Initial 4; Initial 3 |];
+    [| Initial 4; Initial 3; Initial 2; Initial 1 |];
+  |]
+
+let puzzle_4x4 : cell array array =
+  [|
+    [| Empty; Empty; Empty; Initial 4 |];
+    [| Empty; Empty; Empty; Empty |];
+    [| Initial 2; Empty; Empty; Initial 3 |];
+    [| Initial 4; Empty; Initial 1; Initial 2 |];
+  |]
+
+let empty_n n = Array.make_matrix n n Empty
+
+(* board like full_4x4 but with a single empty at (r,c) let board_with_empty
+   base (r, c) = let n = Array.length base in let b = Array.init n (fun i ->
+   Array.copy base.(i)) in b.(r).(c) <- Empty; b *)
+
+let%test "valid: permit placing value when not present in row/col/box (4x4)" =
+  let b = puzzle_4x4 in
+  valid b 4 (2, 2)
+
+let%test "valid: reject row conflict (4x4)" =
+  (* row 0 of full_4x4 already contains a 1, trying to place 1 at (0,1) should
+     be false *)
+  let b = Array.init 4 (fun i -> Array.copy full_4x4.(i)) in
+  (* ensure (0,1) is not the same cell we compare with - simply test row
+     conflict: try placing 1 at a different empty on that same row *)
+  b.(0).(0) <- Initial 1;
+  not (valid b 1 (0, 0))
+
+let%test "valid: reject column conflict (9x9)" =
+  (* Build a small controlled 9x9 column conflict: put Initial 5 at (0,2), then
+     attempting to place 5 at (3,2) should be rejected *)
+  let b = empty_n 9 in
+  b.(0).(2) <- Initial 5;
+  b.(1).(2) <- Initial 1;
+  b.(2).(2) <- Initial 2;
+  (* position (3,2) empty; placing 5 should be invalid because column already
+     has 5 *)
+  not (valid b 5 (3, 2))
+
+let%test "valid: reject subgrid (box) conflict (9x9)" =
+  (* place a 7 in the top-left 3x3 box then test a conflict inside same box *)
+  let b = empty_n 9 in
+  b.(0).(0) <- Initial 7;
+  (* trying to place 7 at (1,1) should fail due to box conflict *)
+  not (valid b 7 (1, 1))
+
+let%test "find_empty: finds first empty in row-major order (4x4)" =
+  let b = Array.init 4 (fun i -> Array.make 4 (Initial 1)) in
+  b.(0).(0) <- Empty;
+  (* first cell empty => should return (0,0) *)
+  match find_empty b with
+  | Some (0, 0) -> true
+  | _ -> false
+
+let%test "find_empty: returns None for a full board (4x4)" =
+  match find_empty full_4x4 with
+  | None -> true
+  | Some _ -> false
+
+let%test "find_empty: finds first empty in 9x9 (row-major)" =
+  let b = empty_n 9 in
+  b.(0).(5) <- Initial 1;
+  (* set some initials but keep (0,0) empty *)
+  match find_empty b with
+  | Some (0, 0) -> true
+  | _ -> false
+
+let%test "count_solutions: complete board -> exactly 1 solution (4x4)" =
+  count_solutions (Array.init 4 (fun i -> Array.copy full_4x4.(i))) 2 = 1
+
+let%test "count_solutions: empty 4x4 hits limit quickly (limit = 2)" =
+  (* completely empty 4x4 has many solutions; with limit 2 algorithm should
+     return 2 *)
+  count_solutions (empty_n 4) 2 = 2
+
+let%test "count_solutions: almost empty 9x9 respects limit (limit = 2)" =
+  (* large empty region; we only care that it reaches the limit *)
+  count_solutions (empty_n 9) 2 = 2
+
+let%test "make_unique: produced puzzle has unique solution (4x4)" =
+  (* Start from a valid full 4x4, run make_unique, then assert the produced
+     board has exactly 1 solution. *)
+  let b = Array.init 4 (fun i -> Array.copy full_4x4.(i)) in
+  ignore (make_unique b);
+  count_solutions b 2 = 1
+
+let%test "make_unique: preserves initial values only as needed (4x4)" =
+  (* make_unique should only leave Initials where necessary to preserve
+     uniqueness. We assert that after make_unique, every non-empty cell is
+     Initial and numbers are in range. *)
+  let b = Array.init 4 (fun i -> Array.copy full_4x4.(i)) in
+  ignore (make_unique b);
+  Array.for_all
+    (Array.for_all (function
+      | Initial v -> 1 <= v && v <= 4
+      | Empty -> true
+      | _ -> false))
+    b
+
+(* Randomly chooses one of the statically-typed, partially filled 16x16 sudoku
+   board *)
+let make_sixteen_board () = sixteen_board
+
 (** [generate_board] prints a new random Sudoku puzzle to solve, based on either
     dimensions 4, 9, or 16. For a 16x16 Sudoku puzzle, our board will choose
     from 10 Sudoku boards that are statically typed. This is due to runtime
@@ -579,5 +860,5 @@ let generate_board num =
   match num with
   | 4 -> make_unique (make_four_board ())
   | 9 -> make_unique (make_nine_board ())
-  | 16 -> Array.map Array.copy (make_sixteen_board ())
+  | 16 -> make_sixteen_board ()
   | _ -> failwith "Only 4x4, 9x9, and 16x16 boards supported"
