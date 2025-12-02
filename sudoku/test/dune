@@ -1,4 +1,12 @@
 (test
  (name test_sudoku)
- (deps (glob_files_rec ../data/*))
-)
+ (libraries ounit2 sudoku)
+ (preprocess
+  (pps ppx_inline_test))
+ (instrumentation
+  (backend bisect_ppx)))
+
+(cram
+ (deps
+  ../bin/main.exe
+  (glob_files_rec ../data/*)))

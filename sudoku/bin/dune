@@ -1,5 +1,6 @@
 (executable
  (public_name sudoku)
  (name main)
- (libraries sudoku ANSITerminal)
+ (libraries sudoku)
+ (instrumentation (backend bisect_ppx))
 )
