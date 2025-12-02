@@ -207,18 +207,10 @@ let choose_random_file_path () =
   let filepath = "data/16board" ^ string_of_int rand_int ^ ".csv" in
   filepath
 
-(* *)
+(* [make_sixteen_board] returns a cell array array that represnts a 16x16 Sudoku
+   board, based off the CSV input data given through [filepath] *)
 let make_sixteen_board filepath =
   let open Csv in
-  let data = Csv.load filepath in
-  convert_csv data
-
-(* Randomly chooses one of the statically-typed, partially filled 16x16 sudoku
-   board *)
-let make_sixteen_board_old () =
-  let open Csv in
-  let rand_int = 1 + Random.int 10 in
-  let filepath = "../data/16board" ^ string_of_int rand_int ^ ".csv" in
   let data = Csv.load filepath in
   convert_csv data
 

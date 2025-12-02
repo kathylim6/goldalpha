@@ -131,6 +131,35 @@ let test_boxes_distinct_9 _ =
   assert_bool "9x9 boxes must have distinct non-empty values"
     (boxes_are_distinct 9 b)
 
+(* tests for [choose_random_file_path] *)
+let extract_number path =
+  let len_prefix = String.length "data/16board" in
+  let len_suffix = String.length ".csv" in
+  let middle =
+    String.sub path len_prefix (String.length path - len_prefix - len_suffix)
+  in
+  int_of_string middle
+
+let test_starts_with _ =
+  let p = choose_random_file_path () in
+  assert_bool "Path should start with data/16board"
+    (String.starts_with ~prefix:"data/16board" p)
+
+let test_ends_with _ =
+  let p = choose_random_file_path () in
+  assert_bool "Path should end with .csv" (String.ends_with ~suffix:".csv" p)
+
+let test_number_in_range _ =
+  let p = choose_random_file_path () in
+  let n = extract_number p in
+  assert_bool "File number should be 1..10" (1 <= n && n <= 10)
+
+let test_randomness_produces_variety _ =
+  let samples = List.init 30 (fun _ -> choose_random_file_path ()) in
+  let uniq = List.sort_uniq compare samples in
+  assert_bool "Randomness should produce more than one distinct output"
+    (List.length uniq > 1)
+
 (* tests for make_sixteen_board 16 *)
 let test_board_size_16 _ =
   let b = make_sixteen_board "../data/16board2.csv" in
@@ -172,6 +201,10 @@ let suite =
          "distinct rows 9" >:: test_rows_distinct_9;
          "distinct columns 9" >:: test_cols_distinct_9;
          "distinct boxes 9" >:: test_boxes_distinct_9;
+         "starts_with" >:: test_starts_with;
+         "ends_with" >:: test_ends_with;
+         "number_in_range" >:: test_number_in_range;
+         "randomness_variety" >:: test_randomness_produces_variety;
          "size 16" >:: test_board_size_16;
          "valid cells 16" >:: test_valid_cells_16;
          "distinct rows 16" >:: test_rows_distinct_16;
