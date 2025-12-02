@@ -1,10 +1,10 @@
 open Sudokutypes
 
-(* Ensures that different random boards are generated each time the program
-   runs *)
+(** [let ()] ensures that different random boards are generated each time the
+    program runs *)
 let () = Random.self_init ()
 
-(* Makes a generic, filled sudoku board *)
+(** [let make_base_board] makes a generic, filled sudoku board *)
 let make_base_board size box_size =
   Array.init size (fun row_index ->
       Array.init size (fun col_index ->
