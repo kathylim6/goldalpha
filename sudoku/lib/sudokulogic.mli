@@ -18,13 +18,27 @@ val string_of_board : cell array array -> string
 
     The output is a fully formatted human-readable Sudoku grid. *)
 
+val make_sixteen_board : string -> cell array array
+(** [make_sixteen_board] returns a 2D cell array of Sudoku board that is 16x16.
+    This function randomly chooses from 10 pre-made 16x16 Sudoku puzzles,
+    therefore the puzzle is not randomly generated with the same algorithm as a
+    4x4 or 9x9 board.
+
+    The filepath is set within Sudokulogic to the data directory, and is
+    included as an argument to help with environment differences in the testing
+    file. *)
+
+val choose_random_file_path : unit -> string
+(** [choose_random_file_path] randomly chooses one out of 10 of the statically
+    typed filepaths in the data directory that contain already curated 16x16
+    puzzles*)
+
 val generate_board : int -> cell array array
-(** [generate_board n] returns 2D cell array of a Sudoku board Sudoku boards,
-    depending on [n]:
+(** [generate_board n] returns 2D cell array of a Sudoku board, depending on
+    [n]:
 
     - [n = 4] → 4×4 board
     - [n = 9] → 9×9 board
-    - [n = 16] → 16×16 board
     - any other n will result in an failure
 
     This function generate puzzles randomly *)

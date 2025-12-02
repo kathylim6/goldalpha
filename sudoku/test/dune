@@ -4,9 +4,7 @@
  (preprocess
   (pps ppx_inline_test))
  (instrumentation
-  (backend bisect_ppx)))
-
-(cram
+  (backend bisect_ppx))
  (deps
   ../bin/main.exe
   (glob_files_rec ../data/*)))

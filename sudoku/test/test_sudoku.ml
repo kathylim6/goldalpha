@@ -131,29 +131,29 @@ let test_boxes_distinct_9 _ =
   assert_bool "9x9 boxes must have distinct non-empty values"
     (boxes_are_distinct 9 b)
 
-(* tests for generate_board 16 *)
+(* tests for make_sixteen_board 16 *)
 let test_board_size_16 _ =
-  let b = generate_board 16 in
+  let b = make_sixteen_board "../data/16board2.csv" in
   assert_bool "board must be 16x16"
     (Array.length b = 16 && Array.for_all (fun row -> Array.length row = 16) b)
 
 let test_valid_cells_16 _ =
-  let b = generate_board 16 in
+  let b = make_sixteen_board "../data/16board8.csv" in
   assert_bool "all cells must be Initial 1..16 or Empty"
     (Array.for_all (Array.for_all (valid_cell 16)) b)
 
 let test_rows_distinct_16 _ =
-  let b = generate_board 16 in
+  let b = make_sixteen_board "../data/16board10.csv" in
   assert_bool "rows must have distinct non-empty values"
     (rows_are_distinct 16 b)
 
 let test_cols_distinct_16 _ =
-  let b = generate_board 16 in
+  let b = make_sixteen_board "../data/16board1.csv" in
   assert_bool "columns must have distinct non-empty values"
     (cols_are_distinct 16 b)
 
 let test_boxes_distinct_16 _ =
-  let b = generate_board 16 in
+  let b = make_sixteen_board "../data/16board1.csv" in
   assert_bool "4x4 boxes must have distinct non-empty values"
     (boxes_are_distinct 16 b)
 

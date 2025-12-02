@@ -16,7 +16,7 @@ let () =
     match chosen_int with
     | 4 -> generate_board 4
     | 9 -> generate_board 9
-    | 16 -> generate_board 16
+    | 16 -> make_sixteen_board (choose_random_file_path ())
     | _ -> failwith "Only 4x4, 9x9, or 16x16 boards supported"
   in
 
