@@ -1,20 +1,6 @@
 open OUnit2
 open Sudoku.Sudokulogic
 
-let test_cell _ =
-  assert_equal "." (string_of_cell Empty 1);
-  assert_equal "3" (string_of_cell (Initial 3) 1);
-  assert_equal "6" (string_of_cell (UserInput 6) 1);
-  assert_equal "12" (string_of_cell (UserInput 12) 2)
-
-let test_row _ =
-  assert_equal "|. 1 |. 3|"
-    (string_of_row [| Empty; Initial 1; Empty; Initial 3 |] 2);
-  assert_equal "|. 2 3 |1 . 9"
-    (string_of_row
-       [| Empty; UserInput 2; Initial 3; UserInput 1; Empty; Initial 9 |]
-       3)
-
 let four_output =
   "----------\n\
    |. 3 |. 2|\n\
@@ -32,346 +18,165 @@ let four_board =
     [| Initial 3; Initial 4; Empty; Empty |];
   |]
 
-let test_board _ = assert_equal four_output (string_of_board four_board)
+let test_string_of_board _ =
+  assert_equal four_output (string_of_board four_board)
 
-(** Test Suite for Sudoku Functions *)
+let valid_cell num = function
+  | Empty -> true
+  | Initial v -> 1 <= v && v <= num
+  | UserInput _ -> false
+
+let rows_are_distinct number board =
+  Array.for_all
+    (fun row ->
+      let seen = Hashtbl.create (number + 1) in
+      Array.for_all
+        (fun c ->
+          match c with
+          | Empty -> true
+          | Initial v ->
+              if Hashtbl.mem seen v then false
+              else (
+                Hashtbl.add seen v ();
+                true)
+          | UserInput _ -> false)
+        row)
+    board
+
+let cols_are_distinct number board =
+  let n = Array.length board in
+  Array.for_all
+    (fun col ->
+      let seen = Hashtbl.create (number + 1) in
+      Array.for_all
+        (fun row ->
+          match board.(row).(col) with
+          | Empty -> true
+          | Initial v ->
+              if Hashtbl.mem seen v then false
+              else (
+                Hashtbl.add seen v ();
+                true)
+          | UserInput _ -> false)
+        (Array.init n Fun.id))
+    (Array.init n Fun.id)
+
+let boxes_are_distinct number board =
+  let n = Array.length board in
+  let box = int_of_float (sqrt (float_of_int n)) in
+  let ok = ref true in
+  for br = 0 to box - 1 do
+    for bc = 0 to box - 1 do
+      let seen = Hashtbl.create (number + 1) in
+      for r = 0 to box - 1 do
+        for c = 0 to box - 1 do
+          match board.((br * box) + r).((bc * box) + c) with
+          | Empty -> ()
+          | Initial v ->
+              if Hashtbl.mem seen v then ok := false else Hashtbl.add seen v ()
+          | UserInput _ -> ok := false
+        done
+      done
+    done
+  done;
+  !ok
+
+(* tests for generate_board 4 *)
+let test_board_size_4 _ =
+  let b = generate_board 4 in
+  assert_bool "board must be 4 x 4"
+    (Array.length b = 4 && Array.for_all (fun row -> Array.length row = 4) b)
+
+let test_valid_cells_4 _ =
+  let b = generate_board 4 in
+  assert_bool "all cells must be Initial 1..4 or Empty"
+    (Array.for_all (Array.for_all (valid_cell 4)) b)
+
+let test_rows_distinct_4 _ =
+  let b = generate_board 4 in
+  assert_bool "rows must have distinct non-empty values" (rows_are_distinct 4 b)
+
+let test_cols_distinct_4 _ =
+  let b = generate_board 4 in
+  assert_bool "columns must have distinct non-empty values"
+    (cols_are_distinct 4 b)
+
+let test_boxes_distinct_4 _ =
+  let b = generate_board 4 in
+  assert_bool "4x4 boxes must have distinct non-empty values"
+    (boxes_are_distinct 4 b)
+
+(* tests for generate_board 9 *)
+let test_board_size_9 _ =
+  let b = generate_board 9 in
+  assert_bool "board must be 9 x 9"
+    (Array.length b = 9 && Array.for_all (fun row -> Array.length row = 9) b)
+
+let test_valid_cells_9 _ =
+  let b = generate_board 9 in
+  assert_bool "all cells must be Initial 1..9 or Empty"
+    (Array.for_all (Array.for_all (valid_cell 9)) b)
+
+let test_rows_distinct_9 _ =
+  let b = generate_board 9 in
+  assert_bool "rows must have distinct non-empty values" (rows_are_distinct 9 b)
+
+let test_cols_distinct_9 _ =
+  let b = generate_board 9 in
+  assert_bool "columns must have distinct non-empty values"
+    (cols_are_distinct 9 b)
+
+let test_boxes_distinct_9 _ =
+  let b = generate_board 9 in
+  assert_bool "9x9 boxes must have distinct non-empty values"
+    (boxes_are_distinct 9 b)
+
+(* tests for generate_board 16 *)
+let test_board_size_16 _ =
+  let b = generate_board 16 in
+  assert_bool "board must be 16x16"
+    (Array.length b = 16 && Array.for_all (fun row -> Array.length row = 16) b)
+
+let test_valid_cells_16 _ =
+  let b = generate_board 16 in
+  assert_bool "all cells must be Initial 1..16 or Empty"
+    (Array.for_all (Array.for_all (valid_cell 16)) b)
+
+let test_rows_distinct_16 _ =
+  let b = generate_board 16 in
+  assert_bool "rows must have distinct non-empty values"
+    (rows_are_distinct 16 b)
+
+let test_cols_distinct_16 _ =
+  let b = generate_board 16 in
+  assert_bool "columns must have distinct non-empty values"
+    (cols_are_distinct 16 b)
+
+let test_boxes_distinct_16 _ =
+  let b = generate_board 16 in
+  assert_bool "4x4 boxes must have distinct non-empty values"
+    (boxes_are_distinct 16 b)
+
+(* Suite *)
 let suite =
   "SudokuTests"
   >::: [
-         "string_of_cell" >:: test_cell;
-         "string_of_row" >:: test_row;
-         "string_of_board" >:: test_board;
-         ( "make_four_board: board is 4x4" >:: fun _ ->
-           let board = make_four_board () in
-           let num_rows = Array.length board in
-           let check_cols = ref true in
-           let row_index = ref 0 in
-           while !row_index < num_rows do
-             if Array.length board.(!row_index) <> 4 then check_cols := false;
-             row_index := !row_index + 1
-           done;
-           let equality = num_rows = 4 && !check_cols in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "make_four_board: all cells are Initial" >:: fun _ ->
-           let board = make_four_board () in
-           let allowed_cells = ref [] in
-           let value = ref 1 in
-           while !value <= 4 do
-             allowed_cells := Initial !value :: !allowed_cells;
-             value := !value + 1
-           done;
-           let all_initial = ref true in
-           let row_index = ref 0 in
-           while !row_index < 4 do
-             let col_index = ref 0 in
-             while !col_index < 4 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if not (List.mem current_cell !allowed_cells) then
-                 all_initial := false;
-               col_index := !col_index + 1
-             done;
-             row_index := !row_index + 1
-           done;
-           let equality = !all_initial in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "make_four_board: all values in 1..4" >:: fun _ ->
-           let board = make_four_board () in
-           let allowed_cells = ref [] in
-           let value = ref 1 in
-           while !value <= 4 do
-             allowed_cells := Initial !value :: !allowed_cells;
-             value := !value + 1
-           done;
-           let all_in_range = ref true in
-           let row_index = ref 0 in
-           while !row_index < 4 do
-             let col_index = ref 0 in
-             while !col_index < 4 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if not (List.mem current_cell !allowed_cells) then
-                 all_in_range := false;
-               col_index := !col_index + 1
-             done;
-             row_index := !row_index + 1
-           done;
-           let equality = !all_in_range in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "make_four_board: each row has distinct values" >:: fun _ ->
-           let board = make_four_board () in
-           let check_distinct = ref true in
-           let row_index = ref 0 in
-           while !row_index < 4 do
-             let seen_cells = ref [] in
-             let col_index = ref 0 in
-             while !col_index < 4 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if List.mem current_cell !seen_cells then check_distinct := false
-               else seen_cells := current_cell :: !seen_cells;
-               col_index := !col_index + 1
-             done;
-             row_index := !row_index + 1
-           done;
-           let equality = !check_distinct in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "make_four_board: each column has distinct values" >:: fun _ ->
-           let board = make_four_board () in
-           let check_distinct = ref true in
-           let col_index = ref 0 in
-           while !col_index < 4 do
-             let seen_cells = ref [] in
-             let row_index = ref 0 in
-             while !row_index < 4 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if List.mem current_cell !seen_cells then check_distinct := false
-               else seen_cells := current_cell :: !seen_cells;
-               row_index := !row_index + 1
-             done;
-             col_index := !col_index + 1
-           done;
-           let equality = !check_distinct in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "make_four_board: each 2x2 box has distinct values" >:: fun _ ->
-           let board = make_four_board () in
-           let check_distinct = ref true in
-           let box_row_index = ref 0 in
-           while !box_row_index < 2 do
-             let box_col_index = ref 0 in
-             while !box_col_index < 2 do
-               let seen_cells = ref [] in
-               let box_row_position = ref 0 in
-               while !box_row_position < 2 do
-                 let box_col_position = ref 0 in
-                 while !box_col_position < 2 do
-                   let row_index = (!box_row_index * 2) + !box_row_position in
-                   let col_index = (!box_col_index * 2) + !box_col_position in
-                   let current_cell = board.(row_index).(col_index) in
-                   if List.mem current_cell !seen_cells then
-                     check_distinct := false
-                   else seen_cells := current_cell :: !seen_cells;
-                   box_col_position := !box_col_position + 1
-                 done;
-                 box_row_position := !box_row_position + 1
-               done;
-               box_col_index := !box_col_index + 1
-             done;
-             box_row_index := !box_row_index + 1
-           done;
-           let equality = !check_distinct in
-           assert_equal true equality ~printer:string_of_bool );
-         (* ---------- 9x9 tests ---------- *)
-         ( "make_nine_board: board is 9x9" >:: fun _ ->
-           let board = make_nine_board () in
-           let num_rows = Array.length board in
-           let check_cols = ref true in
-           let row_index = ref 0 in
-           while !row_index < num_rows do
-             if Array.length board.(!row_index) <> 9 then check_cols := false;
-             row_index := !row_index + 1
-           done;
-           let equality = num_rows = 9 && !check_cols in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "make_nine_board: all cells are Initial" >:: fun _ ->
-           let board = make_nine_board () in
-           let allowed_cells = ref [] in
-           let value = ref 1 in
-           while !value <= 9 do
-             allowed_cells := Initial !value :: !allowed_cells;
-             value := !value + 1
-           done;
-           let all_initial = ref true in
-           let row_index = ref 0 in
-           while !row_index < 9 do
-             let col_index = ref 0 in
-             while !col_index < 9 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if not (List.mem current_cell !allowed_cells) then
-                 all_initial := false;
-               col_index := !col_index + 1
-             done;
-             row_index := !row_index + 1
-           done;
-           let equality = !all_initial in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "make_nine_board: all values in 1..9" >:: fun _ ->
-           let board = make_nine_board () in
-           let allowed_cells = ref [] in
-           let value = ref 1 in
-           while !value <= 9 do
-             allowed_cells := Initial !value :: !allowed_cells;
-             value := !value + 1
-           done;
-           let all_in_range = ref true in
-           let row_index = ref 0 in
-           while !row_index < 9 do
-             let col_index = ref 0 in
-             while !col_index < 9 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if not (List.mem current_cell !allowed_cells) then
-                 all_in_range := false;
-               col_index := !col_index + 1
-             done;
-             row_index := !row_index + 1
-           done;
-           let equality = !all_in_range in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "make_nine_board: each row has distinct values" >:: fun _ ->
-           let board = make_nine_board () in
-           let check_distinct = ref true in
-           let row_index = ref 0 in
-           while !row_index < 9 do
-             let seen_cells = ref [] in
-             let col_index = ref 0 in
-             while !col_index < 9 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if List.mem current_cell !seen_cells then check_distinct := false
-               else seen_cells := current_cell :: !seen_cells;
-               col_index := !col_index + 1
-             done;
-             row_index := !row_index + 1
-           done;
-           let equality = !check_distinct in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "make_nine_board: each column has distinct values" >:: fun _ ->
-           let board = make_nine_board () in
-           let check_distinct = ref true in
-           let col_index = ref 0 in
-           while !col_index < 9 do
-             let seen_cells = ref [] in
-             let row_index = ref 0 in
-             while !row_index < 9 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if List.mem current_cell !seen_cells then check_distinct := false
-               else seen_cells := current_cell :: !seen_cells;
-               row_index := !row_index + 1
-             done;
-             col_index := !col_index + 1
-           done;
-           let equality = !check_distinct in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "make_nine_board: each 3x3 box has distinct values" >:: fun _ ->
-           let board = make_nine_board () in
-           let check_distinct = ref true in
-           let box_row_index = ref 0 in
-           while !box_row_index < 3 do
-             let box_col_index = ref 0 in
-             while !box_col_index < 3 do
-               let seen_cells = ref [] in
-               let box_row_position = ref 0 in
-               while !box_row_position < 3 do
-                 let box_col_position = ref 0 in
-                 while !box_col_position < 3 do
-                   let row_index = (!box_row_index * 3) + !box_row_position in
-                   let col_index = (!box_col_index * 3) + !box_col_position in
-                   let current_cell = board.(row_index).(col_index) in
-                   if List.mem current_cell !seen_cells then
-                     check_distinct := false
-                   else seen_cells := current_cell :: !seen_cells;
-                   box_col_position := !box_col_position + 1
-                 done;
-                 box_row_position := !box_row_position + 1
-               done;
-               box_col_index := !box_col_index + 1
-             done;
-             box_row_index := !box_row_index + 1
-           done;
-           let equality = !check_distinct in
-           assert_equal true equality ~printer:string_of_bool );
-         (* ---------- 16x16 tests ---------- *)
-         (* ( "generate_board 16: board is 16x16" >:: fun _ ->
-           let board = generate_board 16 in
-           let num_rows = Array.length board in
-           let check_cols = ref true in
-           let row_index = ref 0 in
-           while !row_index < num_rows do
-             if Array.length board.(!row_index) <> 16 then check_cols := false;
-             row_index := !row_index + 1
-           done;
-           let equality = num_rows = 16 && !check_cols in
-           assert_equal true equality ~printer:string_of_bool ); *)
-         ( "generate_board 16: all values in 1..16" >:: fun _ ->
-           let board = generate_board 16 in
-           let allowed_cells = ref [] in
-           let value = ref 1 in
-           while !value <= 16 do
-             allowed_cells := Initial !value :: !allowed_cells;
-             value := !value + 1
-           done;
-           let all_in_range = ref true in
-           let row_index = ref 0 in
-           while !row_index < 16 do
-             let col_index = ref 0 in
-             while !col_index < 16 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if not (List.mem current_cell !allowed_cells) then
-                 all_in_range := false;
-               col_index := !col_index + 1
-             done;
-             row_index := !row_index + 1
-           done;
-           let equality = !all_in_range in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "generate_board 16: each row has distinct values" >:: fun _ ->
-           let board = make_sixteen_board () in
-           let check_distinct = ref true in
-           let row_index = ref 0 in
-           while !row_index < 16 do
-             let seen_cells = ref [] in
-             let col_index = ref 0 in
-             while !col_index < 16 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if List.mem current_cell !seen_cells then check_distinct := false
-               else seen_cells := current_cell :: !seen_cells;
-               col_index := !col_index + 1
-             done;
-             row_index := !row_index + 1
-           done;
-           let equality = !check_distinct in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "generate_board 16: each column has distinct values" >:: fun _ ->
-           let board = generate_board 16 in
-           let check_distinct = ref true in
-           let col_index = ref 0 in
-           while !col_index < 16 do
-             let seen_cells = ref [] in
-             let row_index = ref 0 in
-             while !row_index < 16 do
-               let current_cell = board.(!row_index).(!col_index) in
-               if List.mem current_cell !seen_cells then check_distinct := false
-               else seen_cells := current_cell :: !seen_cells;
-               row_index := !row_index + 1
-             done;
-             col_index := !col_index + 1
-           done;
-           let equality = !check_distinct in
-           assert_equal true equality ~printer:string_of_bool );
-         ( "generate_board 16: each 4x4 box has distinct values" >:: fun _ ->
-           let board = generate_board 16 in
-           let check_distinct = ref true in
-           let box_row_index = ref 0 in
-           while !box_row_index < 4 do
-             let box_col_index = ref 0 in
-             while !box_col_index < 4 do
-               let seen_cells = ref [] in
-               let box_row_position = ref 0 in
-               while !box_row_position < 4 do
-                 let box_col_position = ref 0 in
-                 while !box_col_position < 4 do
-                   let row_index = (!box_row_index * 4) + !box_row_position in
-                   let col_index = (!box_col_index * 4) + !box_col_position in
-                   let current_cell = board.(row_index).(col_index) in
-                   if List.mem current_cell !seen_cells then
-                     check_distinct := false
-                   else seen_cells := current_cell :: !seen_cells;
-                   box_col_position := !box_col_position + 1
-                 done;
-                 box_row_position := !box_row_position + 1
-               done;
-               box_col_index := !box_col_index + 1
-             done;
-             box_row_index := !box_row_index + 1
-           done;
-           let equality = !check_distinct in
-           assert_equal true equality ~printer:string_of_bool );
+         "string_of_board" >:: test_string_of_board;
+         "size 4" >:: test_board_size_4;
+         "valid cells 4" >:: test_valid_cells_4;
+         "distinct rows 4" >:: test_rows_distinct_4;
+         "distinct columns 4" >:: test_cols_distinct_4;
+         "distinct boxes 4" >:: test_boxes_distinct_4;
+         "size 9" >:: test_board_size_9;
+         "valid cells 9" >:: test_valid_cells_9;
+         "distinct rows 9" >:: test_rows_distinct_9;
+         "distinct columns 9" >:: test_cols_distinct_9;
+         "distinct boxes 9" >:: test_boxes_distinct_9;
+         "size 16" >:: test_board_size_16;
+         "valid cells 16" >:: test_valid_cells_16;
+         "distinct rows 16" >:: test_rows_distinct_16;
+         "distinct columns 16" >:: test_cols_distinct_16;
+         "distinct boxes 16" >:: test_boxes_distinct_16;
        ]
 
 let () = run_test_tt_main suite
