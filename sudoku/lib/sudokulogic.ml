@@ -1,8 +1,304 @@
-open Sudokutypes
+type cell =
+  | Initial of int
+  | Empty
+  | UserInput of int
 
 (** [let ()] ensures that different random boards are generated each time the
     program runs *)
 let () = Random.self_init ()
+
+(* statically typed 16x16 board *)
+let sixteen_board =
+  [|
+    [|
+      Initial 14;
+      Empty;
+      Initial 9;
+      Initial 8;
+      Empty;
+      Empty;
+      Empty;
+      Initial 4;
+      Initial 1;
+      Initial 5;
+      Empty;
+      Empty;
+      Initial 2;
+      Initial 6;
+      Empty;
+      Initial 16;
+    |];
+    [|
+      Empty;
+      Initial 7;
+      Empty;
+      Initial 16;
+      Initial 3;
+      Empty;
+      Initial 8;
+      Initial 13;
+      Initial 12;
+      Initial 4;
+      Initial 11;
+      Empty;
+      Initial 15;
+      Initial 14;
+      Empty;
+      Empty;
+    |];
+    [|
+      Initial 13;
+      Empty;
+      Initial 4;
+      Empty;
+      Empty;
+      Empty;
+      Empty;
+      Empty;
+      Initial 15;
+      Empty;
+      Initial 14;
+      Initial 10;
+      Initial 5;
+      Empty;
+      Empty;
+      Empty;
+    |];
+    [|
+      Initial 11;
+      Empty;
+      Initial 10;
+      Initial 6;
+      Empty;
+      Initial 15;
+      Initial 1;
+      Empty;
+      Initial 2;
+      Initial 16;
+      Empty;
+      Initial 9;
+      Initial 7;
+      Empty;
+      Initial 3;
+      Empty;
+    |];
+    [|
+      Empty;
+      Initial 2;
+      Initial 7;
+      Initial 1;
+      Initial 16;
+      Initial 8;
+      Empty;
+      Initial 12;
+      Initial 9;
+      Initial 11;
+      Empty;
+      Empty;
+      Empty;
+      Empty;
+      Empty;
+      Initial 10;
+    |];
+    [|
+      Initial 16;
+      Initial 10;
+      Initial 13;
+      Empty;
+      Initial 9;
+      Initial 4;
+      Empty;
+      Initial 1;
+      Initial 5;
+      Initial 8;
+      Empty;
+      Empty;
+      Initial 12;
+      Empty;
+      Initial 6;
+      Initial 7;
+    |];
+    [|
+      Initial 12;
+      Empty;
+      Empty;
+      Initial 5;
+      Empty;
+      Initial 11;
+      Empty;
+      Empty;
+      Empty;
+      Initial 2;
+      Empty;
+      Initial 7;
+      Empty;
+      Initial 3;
+      Empty;
+      Initial 9;
+    |];
+    [|
+      Initial 9;
+      Empty;
+      Empty;
+      Empty;
+      Initial 5;
+      Initial 13;
+      Empty;
+      Empty;
+      Initial 10;
+      Initial 12;
+      Initial 1;
+      Empty;
+      Empty;
+      Initial 16;
+      Initial 2;
+      Initial 4;
+    |];
+    [|
+      Empty;
+      Empty;
+      Empty;
+      Empty;
+      Initial 10;
+      Empty;
+      Initial 12;
+      Initial 14;
+      Initial 3;
+      Initial 13;
+      Initial 4;
+      Empty;
+      Initial 16;
+      Initial 8;
+      Empty;
+      Empty;
+    |];
+    [|
+      Empty;
+      Initial 8;
+      Empty;
+      Empty;
+      Empty;
+      Empty;
+      Empty;
+      Empty;
+      Empty;
+      Initial 15;
+      Initial 12;
+      Empty;
+      Empty;
+      Initial 9;
+      Empty;
+      Initial 6;
+    |];
+    [|
+      Initial 1;
+      Initial 13;
+      Initial 16;
+      Initial 2;
+      Empty;
+      Initial 6;
+      Empty;
+      Initial 9;
+      Initial 11;
+      Initial 14;
+      Empty;
+      Empty;
+      Initial 3;
+      Empty;
+      Initial 4;
+      Empty;
+    |];
+    [|
+      Initial 3;
+      Initial 11;
+      Initial 12;
+      Empty;
+      Initial 4;
+      Empty;
+      Empty;
+      Empty;
+      Initial 6;
+      Empty;
+      Initial 7;
+      Initial 8;
+      Initial 13;
+      Empty;
+      Empty;
+      Initial 14;
+    |];
+    [|
+      Initial 10;
+      Empty;
+      Empty;
+      Initial 14;
+      Empty;
+      Initial 7;
+      Initial 5;
+      Initial 2;
+      Initial 13;
+      Initial 6;
+      Empty;
+      Initial 4;
+      Initial 11;
+      Initial 1;
+      Initial 8;
+      Empty;
+    |];
+    [|
+      Empty;
+      Empty;
+      Initial 11;
+      Initial 12;
+      Initial 13;
+      Empty;
+      Empty;
+      Initial 3;
+      Empty;
+      Empty;
+      Initial 15;
+      Empty;
+      Initial 9;
+      Initial 7;
+      Empty;
+      Initial 2;
+    |];
+    [|
+      Empty;
+      Initial 9;
+      Initial 1;
+      Empty;
+      Initial 15;
+      Empty;
+      Initial 6;
+      Empty;
+      Empty;
+      Empty;
+      Initial 2;
+      Initial 11;
+      Initial 4;
+      Empty;
+      Empty;
+      Empty;
+    |];
+    [|
+      Empty;
+      Initial 4;
+      Initial 3;
+      Empty;
+      Empty;
+      Empty;
+      Initial 10;
+      Initial 8;
+      Empty;
+      Empty;
+      Empty;
+      Initial 12;
+      Empty;
+      Initial 13;
+      Empty;
+      Empty;
+    |];
+  |]
 
 (** [let make_base_board] makes a generic, filled sudoku board *)
 let make_base_board size box_size =
@@ -91,11 +387,7 @@ let make_nine_board () = make_random_board 9 3
 
 (* Randomly chooses one of the statically-typed, partially filled 16x16 sudoku
    board *)
-let make_sixteen_board () =
-  let all = Sixteen_boards.boards in
-  let len = List.length all in
-  let idx = Random.int len in
-  List.nth all idx
+let make_sixteen_board () = sixteen_board
 
 (** let [repeat_string] is a helper function used to print multiple empty spaces
     for proper lining of Sudoku map*)

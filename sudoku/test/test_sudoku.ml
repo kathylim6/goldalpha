@@ -1,6 +1,5 @@
 open OUnit2
 open Sudoku.Sudokulogic
-open Sudoku.Sudokutypes
 
 let test_cell _ =
   assert_equal "." (string_of_cell Empty 1);
