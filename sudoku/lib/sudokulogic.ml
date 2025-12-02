@@ -771,11 +771,8 @@ let%test "valid: permit placing value when not present in row/col/box (4x4)" =
 let%test "valid: reject row conflict (4x4)" =
   (* row 0 of full_4x4 already contains a 1, trying to place 1 at (0,1) should
      be false *)
-  let b = Array.init 4 (fun i -> Array.copy full_4x4.(i)) in
-  (* ensure (0,1) is not the same cell we compare with - simply test row
-     conflict: try placing 1 at a different empty on that same row *)
-  b.(0).(0) <- Initial 1;
-  not (valid b 1 (0, 0))
+  let b = puzzle_4x4 in
+  not (valid b 3 (2, 2))
 
 let%test "valid: reject column conflict (9x9)" =
   (* Build a small controlled 9x9 column conflict: put Initial 5 at (0,2), then
