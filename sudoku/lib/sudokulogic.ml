@@ -687,10 +687,11 @@ let check_valid_box (user_input : int) (board : cell array array) (row : int)
   in
   res
 
-(** [check_valid_input] returns a boolean which is representative of whether the
-    user's input follows the constraints of the Sudoku game or not *)
-let check_valid_input (input : int) (row : int) (col : int)
+(** [check_invalid_input] returns a boolean which is representative of whether
+    the user's input follows the constraints of the Sudoku game or not *)
+let check_invalid_input (input : int) (row : int) (col : int)
     (board : cell array array) : bool =
-  check_valid_row input board row
-  && check_valid_row input board col
-  && check_valid_box input board row col
+  let violates_row = check_valid_row input board row in
+  let violates_col = check_valid_col input board col in
+  let violates_box = check_valid_box input board row col in
+  violates_row || violates_col || violates_box

@@ -79,6 +79,8 @@ let () =
             let row = int_of_string row_str in
             let col = int_of_string col_str in
             let value = int_of_string val_str in
+            if check_invalid_input value row col board then
+              print_endline "Error: This input violates the rules of Sudoku!";
             if value < 1 || value > chosen_int then
               print_endline
                 ("Error: Value must be between 1 and "

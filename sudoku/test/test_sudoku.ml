@@ -173,6 +173,93 @@ let rows_ok b = rows_are_distinct 16 b
 let cols_ok b = cols_are_distinct 16 b
 let boxes_ok b = boxes_are_distinct 16 b
 
+let sample_board =
+  [|
+    [|
+      Initial 5; Initial 3; Empty; Empty; Initial 7; Empty; Empty; Empty; Empty;
+    |];
+    [|
+      Initial 6;
+      Empty;
+      Initial 1;
+      Initial 9;
+      Initial 5;
+      Empty;
+      Empty;
+      Empty;
+      Empty;
+    |];
+    [|
+      Empty;
+      Initial 9;
+      UserInput 8;
+      Empty;
+      Empty;
+      Empty;
+      Empty;
+      Initial 6;
+      Empty;
+    |];
+    [|
+      Initial 8;
+      Empty;
+      Empty;
+      Empty;
+      Initial 6;
+      Empty;
+      Empty;
+      Empty;
+      UserInput 3;
+    |];
+    [|
+      Initial 4;
+      Empty;
+      Empty;
+      Initial 8;
+      Empty;
+      Initial 3;
+      Empty;
+      Empty;
+      Initial 1;
+    |];
+    [|
+      Initial 7; Empty; Empty; Empty; Initial 2; Empty; Empty; Empty; Initial 6;
+    |];
+    [|
+      Empty; Initial 6; Empty; Empty; Empty; Empty; Initial 2; Initial 8; Empty;
+    |];
+    [|
+      Empty;
+      Empty;
+      Empty;
+      Initial 4;
+      Initial 1;
+      Initial 9;
+      Empty;
+      Empty;
+      Initial 5;
+    |];
+    [|
+      Empty; Empty; Empty; Empty; Initial 8; Empty; Empty; Initial 7; Initial 9;
+    |];
+  |]
+
+let test_row_conflict _ =
+  let result = check_invalid_input 3 0 2 sample_board in
+  assert_bool "Placing 3 in row 0 should be invalid" result
+
+let test_column_conflict _ =
+  let result = check_invalid_input 6 5 0 sample_board in
+  assert_bool "Placing 6 in column 0 should be invalid" result
+
+let test_box_conflict _ =
+  let result = check_invalid_input 9 2 0 sample_board in
+  assert_bool "Placing 9 in top-left subgrid should be invalid" result
+
+let test_valid_move _ =
+  let result = check_invalid_input 2 0 2 sample_board in
+  assert_bool "Placing 2 at (0,2) should be valid" (not result)
+
 let make_tests_for_file path =
   let name_base = Filename.basename path in
   [
@@ -216,6 +303,10 @@ let suite =
          "randomness_variety" >:: test_randomness_produces_variety;
          "all 16x16 CSV board tests"
          >::: List.flatten (List.map make_tests_for_file all_paths);
+         "row conflict" >:: test_row_conflict;
+         "column conflict" >:: test_column_conflict;
+         "box conflict" >:: test_box_conflict;
+         "valid move" >:: test_valid_move;
        ]
 
 let () = run_test_tt_main suite

@@ -43,3 +43,7 @@ val generate_board : int -> cell array array
     - any other n will result in an failure
 
     This function generate puzzles randomly *)
+
+val check_invalid_input : int -> int -> int -> cell array array -> bool
+(** [check_invalid_input] returns a boolean which dictates whether or not the
+    user's input in the Sudoku board meets the constraints of the game rules *)
