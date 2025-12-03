@@ -17,13 +17,15 @@ let make_base_board size box_size =
           let value = (base mod size) + 1 in
           value))
 
-(* [swap_rows] swaps the rows in a sudoku board *)
+(** [swap_rows board row1 row2] swaps row [row1] and row [row2] in [board].
+    Modifies [board] in place. *)
 let swap_rows board row1 row2 =
   let temp = board.(row1) in
   board.(row1) <- board.(row2);
   board.(row2) <- temp
 
-(* [swap_columns] swaps the columns in a sudoku board *)
+(** [swap_cols board col1 col2] swaps column [col1] and column [col2] in
+    [board]. Modifies [board] in place. *)
 let swap_cols board col1 col2 =
   let size = Array.length board in
   let row_index = ref 0 in
@@ -78,8 +80,10 @@ let shuffle_cols_within_group board box_size =
     col_group := !col_group + 1
   done
 
-(* [make_random_board] makes a sudoku board using our predefined shuffling
-   techniques, converts from an integer board to a cell board *)
+(** [make_random_board size box_size] creates a random, completely filled, valid
+    sudoku board of dimensions [size × size] with subgrids of size
+    [box_size × box_size]. Returns a 2D cell array where all cells are [Initial]
+    values. *)
 let make_random_board size box_size =
   let int_board = make_base_board size box_size in
   shuffle_rows_within_group int_board box_size;
@@ -88,10 +92,12 @@ let make_random_board size box_size =
       Array.init size (fun col_index ->
           Initial int_board.(row_index).(col_index)))
 
-(* Creates a randomly generated, filled 4x4 sudoku board *)
+(** [make_four_board ()] creates a randomly generated, completely filled 4×4
+    sudoku board. Returns a cell array array. *)
 let make_four_board () = make_random_board 4 2
 
-(* Creates a randomly generated, filled 9x9 sudoku board *)
+(** [make_nine_board ()] creates a randomly generated, completely filled 9×9
+    sudoku board. Returns a cell array array. *)
 let make_nine_board () = make_random_board 9 3
 
 (* in-line test for board generation *)
@@ -178,6 +184,9 @@ let%test "make_nine_board: 3x3 boxes distinct" =
     (List.concat
        (List.init 3 (fun br -> List.init 3 (fun bc -> box (3 * br) (3 * bc)))))
 
+(** [convert_csv data] converts CSV data (list of string lists) into a cell
+    array array. Strings "0" become [Empty] cells, all other numeric strings
+    become [Initial] cells with the corresponding integer value. *)
 let convert_csv (data : string list list) =
   data
   |> List.map (fun row ->
@@ -234,18 +243,19 @@ let%test _ = pad "5" 3 = "5  "
 let%test _ = pad "3" 1 = "3"
 let%test _ = pad "3" 2 = "3 "
 
-(** [string_of_cell c max_len] returns a string representing the cell [c],
-    padded with spaces so that its total width equals [max_len].
-
-    - [Empty] is printed as ["."] - [Initial v] prints the integer [v] -
-      [UserInput v] prints the integer [v]
-
-    All three are padded with trailing spaces to width [max_len].*)
+let blue = "\027[34m"
+let reset = "\027[0m"
+(** [string_of_cell c max_len] returns a string representing cell [c], padded
+    with trailing spaces to width [max_len]. [Initial] values are colored blue
+    using ANSI escape codes, [UserInput] values are default/white color, and [Empty]
+    cells display as ".". *)
 let string_of_cell c max_len =
   match c with
   | Empty -> pad "." max_len
-  | Initial v -> pad (string_of_int v) max_len
-  | UserInput v -> pad (string_of_int v) max_len
+  | Initial v -> 
+      let val_str = string_of_int v in
+      blue ^ val_str ^ reset ^ repeat_string " " (max_len - String.length val_str)
+  | UserInput v -> pad (string_of_int v) max_len  
 
 (* in-line test for [string_of_cell] *)
 
