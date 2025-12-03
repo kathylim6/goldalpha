@@ -75,24 +75,26 @@ let () =
       try
         let parts = String.split_on_char ' ' input in
         match parts with
-        | [ row_str; col_str; val_str ] -> (
+        | [ row_str; col_str; val_str ] ->
             let row = int_of_string row_str in
             let col = int_of_string col_str in
             let value = int_of_string val_str in
-            if check_invalid_input value row col board then
-              print_endline "Error: This input violates the rules of Sudoku!";
+
             if value < 1 || value > chosen_int then
               print_endline
                 ("Error: Value must be between 1 and "
                ^ string_of_int chosen_int ^ "!")
-            else
+            else if
               match board.(row).(col) with
-              | Initial _ ->
-                  print_endline "Error: Cannot modify an initial cell!"
-              | Empty | UserInput _ ->
-                  board.(row).(col) <- UserInput value;
-                  print_endline "\nUpdated board:";
-                  print_endline (string_of_board board))
+              | Initial _ -> true
+              | _ -> false
+            then print_endline "Error: Cannot modify an initial cell!"
+            else if check_invalid_input value row col board then
+              print_endline "Error: This input violates the rules of Sudoku!"
+            else (
+              board.(row).(col) <- UserInput value;
+              print_endline "\nUpdated board:";
+              print_endline (string_of_board board))
         | _ -> print_endline "Invalid input format! Use: row col value"
       with
       | Invalid_argument _ -> print_endline "Invalid number format!"
