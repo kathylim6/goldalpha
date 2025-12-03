@@ -1,9 +1,51 @@
 open Sudoku.Sudokulogic
 
 let () =
+  let rule_one =
+    "-> Sudoku is a widely popular logic puzzle in which one attempts to fill \
+     in a grid using a certain subset of numbers."
+  in
+  let rule_two =
+    "-> If you chose to play with a 4x4 board, the numbers you are allowed to \
+     use are 1-4."
+  in
+  let rule_three =
+    "-> If you chose to play with a 9x9 board, the numbers you are allowed to \
+     use are 1-9."
+  in
+  let rule_four =
+    "-> If you chose to play with a 16x16 board, the numbers you are allowed \
+     to use are 1-16."
+  in
+  let rule_five =
+    "-> When the game starts, some cells will already be filled with fixed \
+     values."
+  in
+  let rule_six = "-> These starting values can not be changed." in
+  let rule_seven =
+    "-> Your goal is to fill in the remaining cells in a manner such each row, \
+     column, and box contains all of the numbers in the subset exactly once."
+  in
+  let sudoku_rules =
+    [
+      rule_one; rule_two; rule_three; rule_four; rule_five; rule_six; rule_seven;
+    ]
+  in
   print_endline
-    "Hello, welcome to Sudoku! Would you like to solve a 4x4 board, a 9x9 \
-     board, or a 16x16 board? Respond with (4), (9), or (16).";
+    "Hello, welcome to Sudoku! Would you like to review the rules? Respond \
+     with (Y) for yes and anything else for no.";
+  let initial_response = read_line () in
+  print_newline ();
+  if initial_response = "Y" || initial_response = "y" then
+    let rules_length = List.length sudoku_rules in
+    for i = 0 to rules_length - 1 do
+      print_endline (List.nth sudoku_rules i)
+    done
+  else print_endline "Great, let's get right to it.";
+  print_newline ();
+  print_endline
+    "Would you like to solve a 4x4 board, a 9x9 board, or a 16x16 board? \
+     Respond with (4), (9), or (16).";
   let chosen_size = ref (read_line ()) in
   while !chosen_size <> "4" && !chosen_size <> "9" && !chosen_size <> "16" do
     print_endline
@@ -20,6 +62,7 @@ let () =
     | _ -> failwith "Only 4x4, 9x9, or 16x16 boards supported"
   in
 
+  print_newline ();
   print_endline "Here is your board:";
   print_endline (string_of_board board);
 
