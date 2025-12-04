@@ -100,7 +100,6 @@ let make_four_board () = make_random_board 4 2
     sudoku board. Returns a cell array array. *)
 let make_nine_board () = make_random_board 9 3
 
-
 (** [convert_csv data] converts CSV data (list of string lists) into a cell
     array array. Strings "0" become [Empty] cells, all other numeric strings
     become [Initial] cells with the corresponding integer value. *)
@@ -113,7 +112,6 @@ let convert_csv (data : string list list) =
               | s -> Initial (int_of_string s))
          |> Array.of_list)
   |> Array.of_list
-
 
 [@@@coverage off]
 
@@ -172,17 +170,19 @@ let%test _ = pad "3" 2 = "3 "
 
 let blue = "\027[34m"
 let reset = "\027[0m"
+
 (** [string_of_cell c max_len] returns a string representing cell [c], padded
     with trailing spaces to width [max_len]. [Initial] values are colored blue
-    using ANSI escape codes, [UserInput] values are default/white color, and [Empty]
-    cells display as ".". *)
+    using ANSI escape codes, [UserInput] values are default/white color, and
+    [Empty] cells display as ".". *)
 let string_of_cell c max_len =
   match c with
   | Empty -> pad "." max_len
-  | Initial v -> 
+  | Initial v ->
       let val_str = string_of_int v in
-      blue ^ val_str ^ reset ^ repeat_string " " (max_len - String.length val_str)
-  | UserInput v -> pad (string_of_int v) max_len  
+      blue ^ val_str ^ reset
+      ^ repeat_string " " (max_len - String.length val_str)
+  | UserInput v -> pad (string_of_int v) max_len
 
 [@@@coverage off]
 
@@ -194,7 +194,6 @@ let%test "string_of_cell works on Empty/Initial/UserInput" =
   && string_of_cell (UserInput 12) 2 = "12"
 
 [@@@coverage on]
-
 
 (** [string_of_row input_row root] converts a full Sudoku row into a 
   formatted string.
@@ -222,12 +221,10 @@ let string_of_row input_row root =
 let%test "string_of_row creates rows correctly" =
   string_of_row [| Empty; Initial 1; Empty; Initial 3 |] 2
   = "|. \027[34m1\027[0m |. \027[34m3\027[0m|"
-  &&
-  string_of_row
-    [| Empty; UserInput 2; Initial 3; UserInput 1; Empty; Initial 9 |]
-    3
-  = "|. 2 \027[34m3\027[0m |1 . \027[34m9\027[0m"
-
+  && string_of_row
+       [| Empty; UserInput 2; Initial 3; UserInput 1; Empty; Initial 9 |]
+       3
+     = "|. 2 \027[34m3\027[0m |1 . \027[34m9\027[0m"
 
 [@@@coverage on]
 
@@ -454,11 +451,10 @@ let puzzle_4x4 : cell array array =
     [| Initial 4; Empty; Initial 1; Initial 2 |];
   |]
 
-  (** [empty_n] makes board like full_4x4 but with a single empty at (r,c) let board_with_empty
-   base (r, c) = let n = Array.length base in let b = Array.init n (fun i ->
-   Array.copy base.(i)) in b.(r).(c) <- Empty; b *)
+(** [empty_n] makes board like full_4x4 but with a single empty at (r,c) let
+    board_with_empty base (r, c) = let n = Array.length base in let b =
+    Array.init n (fun i -> Array.copy base.(i)) in b.(r).(c) <- Empty; b *)
 let empty_n n = Array.make_matrix n n Empty
-
 
 [@@@coverage off]
 
@@ -658,8 +654,3 @@ let check_invalid_input (input : int) (row : int) (col : int)
   let violates_col = check_valid_col input board col in
   let violates_box = check_valid_box input board row col in
   violates_row || violates_col || violates_box
-
-[@@@coverage off]
-(* in-line tests for all the helper functions *)
-
-[@@@coverage on]
