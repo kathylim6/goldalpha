@@ -47,3 +47,36 @@ val generate_board : int -> cell array array
 val check_invalid_input : int -> int -> int -> cell array array -> bool
 (** [check_invalid_input] returns a boolean which dictates whether or not the
     user's input in the Sudoku board meets the constraints of the game rules *)
+
+val string_of_board_with_conflicts :
+  cell array array -> (int * int) list -> string
+(** [string_of_board_with_conflicts board conflicts] converts the board to a
+    formatted string with cells at positions in [conflicts] highlighted in red.
+
+    - Conflicting [Initial] cells are shown in bright red
+    - Conflicting [UserInput] cells are shown in regular red
+    - Non-conflicting cells use normal coloring (blue for Initial, white for
+      UserInput)
+
+    This is used to display invalid move attempts without modifying the actual
+    board. *)
+
+val find_conflicts : cell array array -> int -> int -> int -> (int * int) list
+(** [find_conflicts board row col value] returns a list of (row, col) positions
+    that would conflict with placing [value] at position ([row], [col]).
+
+    Checks for conflicts in:
+    - The same row
+    - The same column
+    - The same subgrid/box
+
+    Returns positions of all cells containing [value] that violate Sudoku rules.
+*)
+
+val is_board_complete : cell array array -> bool
+(** [is_board_complete board] returns [true] if all cells are filled (no Empty
+    cells). *)
+
+val is_board_valid : cell array array -> bool
+(** [is_board_valid board] returns [true] if the board is completely filled and
+    valid (no conflicts in rows, columns, or boxes). *)

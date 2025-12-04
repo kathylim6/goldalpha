@@ -1,5 +1,9 @@
 open Sudoku.Sudokulogic
 
+let red = "\027[31m"
+let green = "\027[32m"
+let reset = "\027[0m"
+
 let () =
   let inital_walkthrough__message = "Let's say we start out with this board:" in
   let initial_example_board =
@@ -161,7 +165,8 @@ let () =
 
   let playing = ref true in
   while !playing do
-    print_endline "\nEnter row, column, and value (e.g., '0 1 5') or 'quit':";
+    print_endline "\nEnter row, column, and value (e.g., '0 1 5')";
+    print_endline "Enter '0' as the value to delete a cell, or 'quit' to exit:";
     let input = read_line () in
     if input = "quit" then playing := false
     else full_history := input :: !full_history;
@@ -173,25 +178,78 @@ let () =
           let col = int_of_string col_str in
           let value = int_of_string val_str in
 
-          if value < 1 || value > chosen_int then
-            print_endline
-              ("Error: Value must be between 1 and " ^ string_of_int chosen_int
-             ^ "!")
-          else if
+          if
             match board.(row).(col) with
             | Initial _ -> true
             | _ -> false
-          then print_endline "Error: Cannot modify an initial cell!"
-          else if check_invalid_input value row col board then
-            print_endline "Error: This input violates the rules of Sudoku!"
+          then
+            print_endline (red ^ "Error: Cannot modify an initial cell!" ^ reset)
+          else if value = 0 then
+            match board.(row).(col) with
+            | UserInput _ ->
+                board.(row).(col) <- Empty;
+                valid_history := input :: !valid_history;
+                print_endline (green ^ "\nCell cleared! Updated board:" ^ reset);
+                print_endline (string_of_board board)
+            | Empty -> print_endline "Cell is already empty!"
+            | Initial _ ->
+                print_endline
+                  (red ^ "Error: Cannot delete an initial cell!" ^ reset)
+          else if value < 1 || value > chosen_int then
+            print_endline
+              (red ^ "Error: Value must be between 1 and "
+             ^ string_of_int chosen_int ^ ", or 0 to delete!" ^ reset)
+          else if check_invalid_input value row col board then (
+            let temp_board =
+              Array.init (Array.length board) (fun i -> Array.copy board.(i))
+            in
+            temp_board.(row).(col) <- UserInput value;
+
+            let conflicts = find_conflicts temp_board row col value in
+            let all_conflicts = (row, col) :: conflicts in
+
+            print_endline
+              (red ^ "This input violates the rules of Sudoku!" ^ reset);
+            print_endline "What you attempted:";
+            print_endline
+              (string_of_board_with_conflicts temp_board all_conflicts))
           else (
             valid_history := input :: !valid_history;
             board.(row).(col) <- UserInput value;
-            print_endline "\nUpdated board:";
-            print_endline (string_of_board board))
-      | _ -> print_endline "Invalid input format! Use: row col value"
+            print_endline (green ^ "\nValid move! Updated board:" ^ reset);
+            print_endline (string_of_board board);
+
+            if is_board_complete board then
+              if is_board_valid board then (
+                print_endline "";
+                print_endline
+                  (green ^ "╔═══════════════════════════════════════╗" ^ reset);
+                print_endline
+                  (green ^ "║                                       ║" ^ reset);
+                print_endline
+                  (green ^ "║       CONGRATULATIONS! YOU WON!       ║" ^ reset);
+                print_endline
+                  (green ^ "║                                       ║" ^ reset);
+                print_endline
+                  (green ^ "║  You successfully solved the puzzle!  ║" ^ reset);
+                print_endline
+                  (green ^ "║                                       ║" ^ reset);
+                print_endline
+                  (green ^ "╚═══════════════════════════════════════╝" ^ reset);
+                print_endline "";
+                playing := false)
+              else
+                print_endline
+                  (red ^ "Board is full but contains errors. Keep trying!"
+                 ^ reset))
+      | _ ->
+          print_endline
+            (red ^ "Invalid input format! Use: row col value" ^ reset)
     with
-    | Invalid_argument _ -> print_endline "Invalid number format!"
-    | _ -> print_endline "Invalid input! Make sure row/col are within bounds."
+    | Invalid_argument _ ->
+        print_endline (red ^ "Invalid number format!" ^ reset)
+    | _ ->
+        print_endline
+          (red ^ "Invalid input! Make sure row/col are within bounds." ^ reset)
   done;
   print_endline "Thanks for playing!"
