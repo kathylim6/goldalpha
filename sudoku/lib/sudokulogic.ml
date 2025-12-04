@@ -414,26 +414,33 @@ let count_solutions board limit =
 (** [make_unique] takes in an array of cells that represents a completely filled
     in, valid board. It uses an algorithm to modify this board to make a new
     random puzzle that has a unique solution which will then given to the user*)
-let make_unique (board : cell array array) =
+let make_unique board =
   let coords = convert_to_cords board in
   Random.self_init ();
   Array.shuffle ~rand:(fun n -> Random.int n) coords;
 
-  for index = 0 to Array.length coords - 1 do
-    let x, y = coords.(index) in
-    let number =
-      match board.(x).(y) with
-      | Initial n -> n
-      | _ -> failwith "Unexpected non-initial cell"
-    in
-    board.(x).(y) <- Empty;
+  let rec remove index =
+    if index = Array.length coords then true
+    else
+      let r, c = coords.(index) in
+      match board.(r).(c) with
+      | Empty -> remove (index + 1)
+      | Initial n ->
+          board.(r).(c) <- Empty;
 
-    let num_solutions = count_solutions board 2 in
-    if num_solutions <> 1 then board.(x).(y) <- Initial number
-  done;
+          if count_solutions board 2 = 1 then
+            (* keep removed, continue *)
+            remove (index + 1)
+          else begin
+            (* revert, try skipping removal *)
+            board.(r).(c) <- Initial n;
+            remove (index + 1)
+          end
+      | UserInput _ -> failwith "Unexpected user input cell"
+  in
+
+  ignore (remove 0);
   board
-
-(* Inline tests for valid, find_empty, count_solutions, make_unique *)
 
 let full_4x4 : cell array array =
   [|
