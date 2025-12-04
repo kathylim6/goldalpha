@@ -3,11 +3,11 @@ open Sudoku.Sudokulogic
 
 let four_output =
   "----------\n\
-   |. 3 |. 2|\n\
-   |. . |4 3|\n\
+   |. \027[34m3\027[0m |. \027[34m2\027[0m|\n\
+   |. . |\027[34m4\027[0m \027[34m3\027[0m|\n\
    ----------\n\
-   |2 . |3 .|\n\
-   |3 4 |. .|\n\
+   |\027[34m2\027[0m . |\027[34m3\027[0m .|\n\
+   |\027[34m3\027[0m \027[34m4\027[0m |. .|\n\
    ----------\n"
 
 let four_board =
@@ -19,7 +19,7 @@ let four_board =
   |]
 
 let test_string_of_board _ =
-  assert_equal four_output (string_of_board four_board)
+  assert_equal ~printer:(fun s -> s) four_output (string_of_board four_board)
 
 let valid_cell num = function
   | Empty -> true
