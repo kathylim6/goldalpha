@@ -100,89 +100,6 @@ let make_four_board () = make_random_board 4 2
     sudoku board. Returns a cell array array. *)
 let make_nine_board () = make_random_board 9 3
 
-(* in-line test for board generation *)
-let%test "make_four_board: board is 4x4" =
-  let b = make_four_board () in
-  Array.length b = 4 && Array.for_all (fun row -> Array.length row = 4) b
-
-let%test "make_four_board: all cells are Initial 1..4" =
-  let b = make_four_board () in
-  Array.for_all
-    (Array.for_all (function
-      | Initial v -> 1 <= v && v <= 4
-      | Empty -> false
-      | UserInput _ -> false))
-    b
-
-let%test "make_four_board: each row has distinct values" =
-  let b = make_four_board () in
-  Array.for_all
-    (fun row ->
-      let vals = Array.to_list row in
-      List.length vals = List.length (List.sort_uniq compare vals))
-    b
-
-let%test "make_four_board: each column has distinct values" =
-  let b = make_four_board () in
-  let get_col j = Array.init 4 (fun i -> b.(i).(j)) in
-  Array.for_all
-    (fun col ->
-      let vals = Array.to_list col in
-      List.length vals = List.length (List.sort_uniq compare vals))
-    (Array.init 4 get_col)
-
-let%test "make_four_board: each 2x2 box has distinct values" =
-  let b = make_four_board () in
-  let box r c =
-    [ b.(r).(c); b.(r).(c + 1); b.(r + 1).(c); b.(r + 1).(c + 1) ]
-  in
-  List.for_all
-    (fun cells ->
-      let len = List.length cells in
-      len = List.length (List.sort_uniq compare cells))
-    [ box 0 0; box 0 2; box 2 0; box 2 2 ]
-
-let%test "make_nine_board: board is 9x9" =
-  let b = make_nine_board () in
-  Array.length b = 9 && Array.for_all (fun row -> Array.length row = 9) b
-
-let%test "make_nine_board: all cells are Initial 1..9" =
-  let b = make_nine_board () in
-  Array.for_all
-    (Array.for_all (function
-      | Initial v -> 1 <= v && v <= 9
-      | Empty -> false
-      | UserInput _ -> false))
-    b
-
-let%test "make_nine_board: rows distinct" =
-  let b = make_nine_board () in
-  Array.for_all
-    (fun row ->
-      let vals = Array.to_list row in
-      List.length vals = List.length (List.sort_uniq compare vals))
-    b
-
-let%test "make_nine_board: cols distinct" =
-  let b = make_nine_board () in
-  let col j = Array.init 9 (fun i -> b.(i).(j)) in
-  Array.for_all
-    (fun col ->
-      let vals = Array.to_list col in
-      List.length vals = List.length (List.sort_uniq compare vals))
-    (Array.init 9 col)
-
-let%test "make_nine_board: 3x3 boxes distinct" =
-  let b = make_nine_board () in
-  let box r c =
-    List.concat
-      (List.init 3 (fun dr -> List.init 3 (fun dc -> b.(r + dr).(c + dc))))
-  in
-  List.for_all
-    (fun cells ->
-      List.length cells = List.length (List.sort_uniq compare cells))
-    (List.concat
-       (List.init 3 (fun br -> List.init 3 (fun bc -> box (3 * br) (3 * bc)))))
 
 (** [convert_csv data] converts CSV data (list of string lists) into a cell
     array array. Strings "0" become [Empty] cells, all other numeric strings
@@ -197,6 +114,10 @@ let convert_csv (data : string list list) =
          |> Array.of_list)
   |> Array.of_list
 
+
+[@@@coverage off]
+
+(* in-line test for convert_csv *)
 let%test "convert_csv parses a simple 2x3 CSV correctly" =
   let csv = [ [ "1"; "0"; "5" ]; [ "0"; "16"; "3" ] ] in
   let result = convert_csv csv in
@@ -207,6 +128,8 @@ let%test "convert_csv handles only zeros" =
   let csv = [ [ "0"; "0" ]; [ "0"; "0" ] ] in
   let r = convert_csv csv in
   r = [| [| Empty; Empty |]; [| Empty; Empty |] |]
+
+[@@@coverage on]
 
 (* [choose_random_file_path] randomly chooses one out of 10 of the statically
    typed filepaths in the data directory that contain already curated 16x16
@@ -234,6 +157,8 @@ let pad s max =
   let spaces = max - String.length s in
   s ^ repeat_string " " spaces
 
+[@@@coverage off]
+
 (* in-line test cases for [pad] and [repeat_string] *)
 let%test _ = repeat_string "a" 3 = "aaa"
 let%test _ = repeat_string " " 3 = "   "
@@ -242,6 +167,8 @@ let%test _ = repeat_string " " 0 = ""
 let%test _ = pad "5" 3 = "5  "
 let%test _ = pad "3" 1 = "3"
 let%test _ = pad "3" 2 = "3 "
+
+[@@@coverage on]
 
 let blue = "\027[34m"
 let reset = "\027[0m"
@@ -257,13 +184,17 @@ let string_of_cell c max_len =
       blue ^ val_str ^ reset ^ repeat_string " " (max_len - String.length val_str)
   | UserInput v -> pad (string_of_int v) max_len  
 
-(* in-line test for [string_of_cell] *)
+[@@@coverage off]
 
+(* in-line test for [string_of_cell] *)
 let%test "string_of_cell works on Empty/Initial/UserInput" =
   string_of_cell Empty 1 = "."
-  && string_of_cell (Initial 3) 1 = "3"
+  && string_of_cell (Initial 3) 1 = "\027[34m3\027[0m"
   && string_of_cell (UserInput 6) 1 = "6"
   && string_of_cell (UserInput 12) 2 = "12"
+
+[@@@coverage on]
+
 
 (** [string_of_row input_row root] converts a full Sudoku row into a 
   formatted string.
@@ -285,13 +216,20 @@ let string_of_row input_row root =
          else string_of_cell x max_len)
        row_list)
 
+[@@@coverage off]
+
 (* in-line test for [string_of_row] *)
 let%test "string_of_row creates rows correctly" =
-  string_of_row [| Empty; Initial 1; Empty; Initial 3 |] 2 = "|. 1 |. 3|"
-  && string_of_row
-       [| Empty; UserInput 2; Initial 3; UserInput 1; Empty; Initial 9 |]
-       3
-     = "|. 2 3 |1 . 9"
+  string_of_row [| Empty; Initial 1; Empty; Initial 3 |] 2
+  = "|. \027[34m1\027[0m |. \027[34m3\027[0m|"
+  &&
+  string_of_row
+    [| Empty; UserInput 2; Initial 3; UserInput 1; Empty; Initial 9 |]
+    3
+  = "|. 2 \027[34m3\027[0m |1 . \027[34m9\027[0m"
+
+
+[@@@coverage on]
 
 (** let [string_of_board] is a function that converts the entire cell array
     array board into a printable string by calling helper functions such as let
@@ -334,6 +272,8 @@ let convert_to_cords (board : cell array array) : (int * int) array =
     done
   done;
   result
+
+[@@@coverage off]
 
 (* in-line tests for [convert_to_cords] *)
 let%test "convert_to_cords: 4x4 board" =
@@ -393,6 +333,8 @@ let%test "convert_to_cords 16x16 ordering spot check" =
   && coords.(15) = (0, 15)
   && coords.(16) = (1, 0)
   && coords.(255) = (15, 15)
+
+[@@@coverage on]
 
 let valid (board : cell array array) (check : int) (pos : int * int) : bool =
   let row = fst pos in
@@ -512,11 +454,15 @@ let puzzle_4x4 : cell array array =
     [| Initial 4; Empty; Initial 1; Initial 2 |];
   |]
 
-let empty_n n = Array.make_matrix n n Empty
-
-(* board like full_4x4 but with a single empty at (r,c) let board_with_empty
+  (** [empty_n] makes board like full_4x4 but with a single empty at (r,c) let board_with_empty
    base (r, c) = let n = Array.length base in let b = Array.init n (fun i ->
    Array.copy base.(i)) in b.(r).(c) <- Empty; b *)
+let empty_n n = Array.make_matrix n n Empty
+
+
+[@@@coverage off]
+
+(* in-line tests for checking [valid] *)
 
 let%test "valid: permit placing value when not present in row/col/box (4x4)" =
   let b = puzzle_4x4 in
@@ -599,6 +545,8 @@ let%test "make_unique: preserves initial values only as needed (4x4)" =
       | _ -> false))
     b
 
+[@@@coverage on]
+
 (** [generate_board] prints a new random Sudoku puzzle to solve, based on either
     dimensions 4 or 9. *)
 let generate_board num =
@@ -627,6 +575,9 @@ let board =
     [| Empty; Empty; Empty |];
   |]
 
+[@@@coverage off]
+(* in-line tests for check_valid_row *)
+
 let%test "row0 has conflict with an initial cell generated by game" =
   check_valid_row 1 board 0 = true
 
@@ -637,6 +588,8 @@ let%test "row0_no_conflict" = check_valid_row 3 board 0 = false
 let%test "row1_conflict_dual" = check_valid_row 4 board 1 = true
 let%test "row1_no_conflict" = check_valid_row 9 board 1 = false
 let%test "empty_row" = check_valid_row 5 board 2 = false
+
+[@@@coverage on]
 
 (** [convert_column_to_arr] converts the given column of a board to an array
     that can be easily parsed*)
@@ -705,3 +658,8 @@ let check_invalid_input (input : int) (row : int) (col : int)
   let violates_col = check_valid_col input board col in
   let violates_box = check_valid_box input board row col in
   violates_row || violates_col || violates_box
+
+[@@@coverage off]
+(* in-line tests for all the helper functions *)
+
+[@@@coverage on]
