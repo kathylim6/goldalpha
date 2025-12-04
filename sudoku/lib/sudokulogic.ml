@@ -133,7 +133,7 @@ let%test "convert_csv handles only zeros" =
    typed filepaths in the data directory that contain already curated 16x16
    puzzles*)
 let choose_random_file_path () =
-  let rand_int = 1 + Random.int 10 in
+  let rand_int = 1 + Random.int 3 in
   let filepath = "data/16board" ^ string_of_int rand_int ^ ".csv" in
   filepath
 
@@ -258,7 +258,8 @@ let string_of_board input_board : string =
     cells and outputs an array of tuples of coordinates. The first two ints
     represent the coordinate position of the cell in the sudoku board.
     [convert_to_cords] is used as a helper in the creation of the puzzle. *)
-let convert_to_cords (board : cell array array) : (int * int) array =
+let convert_to_cords (board : cell array array) (level : int) :
+    (int * int) array =
   let board_dim = Array.length board in
   let result = Array.make (board_dim * board_dim) (0, 0) in
   let k = ref 0 in
@@ -282,7 +283,7 @@ let%test "convert_to_cords: 4x4 board" =
       [| Empty; Empty; Empty; Empty |];
     |]
   in
-  convert_to_cords board
+  convert_to_cords board 3
   = [|
       (0, 0);
       (0, 1);
@@ -304,13 +305,13 @@ let%test "convert_to_cords: 4x4 board" =
 
 let%test "convert_to_cords 9x9 length" =
   let board = Array.make_matrix 9 9 Empty in
-  let coords = convert_to_cords board in
+  let coords = convert_to_cords board 3 in
   Array.length coords = 81
 
 (* only spot-check a different coordinates for 9x9 boards and 16x16 boards*)
 let%test "convert_to_cords 9x9 ordering" =
   let board = Array.make_matrix 9 9 (Initial 5) in
-  let coords = convert_to_cords board in
+  let coords = convert_to_cords board 3 in
   coords.(0) = (0, 0)
   && coords.(1) = (0, 1)
   && coords.(8) = (0, 8)
@@ -319,12 +320,12 @@ let%test "convert_to_cords 9x9 ordering" =
 
 let%test "convert_to_cords 16x16 length" =
   let board = Array.make_matrix 16 16 Empty in
-  let coords = convert_to_cords board in
+  let coords = convert_to_cords board 3 in
   Array.length coords = 256
 
 let%test "convert_to_cords 16x16 ordering spot check" =
   let board = Array.make_matrix 16 16 (Initial 3) in
-  let coords = convert_to_cords board in
+  let coords = convert_to_cords board 3 in
   coords.(0) = (0, 0)
   && coords.(1) = (0, 1)
   && coords.(15) = (0, 15)
@@ -414,8 +415,8 @@ let count_solutions board limit =
 (** [make_unique] takes in an array of cells that represents a completely filled
     in, valid board. It uses an algorithm to modify this board to make a new
     random puzzle that has a unique solution which will then given to the user*)
-let make_unique board =
-  let coords = convert_to_cords board in
+let make_unique (board : cell array array) (level : int) =
+  let coords = convert_to_cords board level in
   Random.self_init ();
   Array.shuffle ~rand:(fun n -> Random.int n) coords;
 
@@ -532,7 +533,7 @@ let%test "make_unique: produced puzzle has unique solution (4x4)" =
   (* Start from a valid full 4x4, run make_unique, then assert the produced
      board has exactly 1 solution. *)
   let b = Array.init 4 (fun i -> Array.copy full_4x4.(i)) in
-  ignore (make_unique b);
+  ignore (make_unique b 3);
   count_solutions b 2 = 1
 
 let%test "make_unique: preserves initial values only as needed (4x4)" =
@@ -540,7 +541,7 @@ let%test "make_unique: preserves initial values only as needed (4x4)" =
      uniqueness. We assert that after make_unique, every non-empty cell is
      Initial and numbers are in range. *)
   let b = Array.init 4 (fun i -> Array.copy full_4x4.(i)) in
-  ignore (make_unique b);
+  ignore (make_unique b 3);
   Array.for_all
     (Array.for_all (function
       | Initial v -> 1 <= v && v <= 4
@@ -552,10 +553,10 @@ let%test "make_unique: preserves initial values only as needed (4x4)" =
 
 (** [generate_board] prints a new random Sudoku puzzle to solve, based on either
     dimensions 4 or 9. *)
-let generate_board num =
+let generate_board num level =
   match num with
-  | 4 -> make_unique (make_four_board ())
-  | 9 -> make_unique (make_nine_board ())
+  | 4 -> make_unique (make_four_board ()) level
+  | 9 -> make_unique (make_nine_board ()) level
   | _ -> failwith "Only 4x4 and 9x9 boards supported for random generation"
 
 (** [check_valid_row] checks that there are no overlapping values between the
@@ -583,11 +584,11 @@ let board =
 (* in-line test to make sure that generated board actually has one unique
    solution *)
 let%test "generated 4x4 puzzle has one unique solution" =
-  let b = generate_board 4 in
+  let b = generate_board 4 3 in
   count_solutions b 100 = 1
 
 let%test "generated 9x9 puzzle has one unique solution" =
-  let b = generate_board 9 in
+  let b = generate_board 9 3 in
   count_solutions b 100 = 1
 
 (* in-line tests for check_valid_row *)
