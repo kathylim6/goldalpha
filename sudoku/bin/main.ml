@@ -148,24 +148,26 @@ let () =
   done;
   let chosen_int = int_of_string !chosen_size in
 
-  if chosen_int = 4 || chosen_int = 9 then
-    print_endline
-      "If select whether the level you want to play \n\n\
-      \      Level 1 Easy : (1) \n\n\
-      \      Level 2 Medium : (2) \n\n\
-      \      Level 3 Hard : (3) \n\
-      \      ";
-
-  let pre_processed_level = read_line () in
-  let level = int_of_string pre_processed_level in
-
-  print_endline ("You are playing at level " ^ pre_processed_level);
+  (* Only prompt for level on 4×4 and 9×9 *)
+  let level_opt =
+    if chosen_int = 4 || chosen_int = 9 then (
+      print_endline
+        "Select the difficulty level:\n\n\
+         Level 1 Easy    : (1)\n\
+         Level 2 Medium  : (2)\n\
+         Level 3 Hard    : (3)\n";
+      let pre_processed_level = read_line () in
+      let level = int_of_string pre_processed_level in
+      print_endline ("You are playing at level " ^ pre_processed_level);
+      Some level)
+    else None
+  in
 
   let board =
-    match chosen_int with
-    | 4 -> generate_board 4 level
-    | 9 -> generate_board 9 level
-    | 16 -> make_sixteen_board (choose_random_file_path ())
+    match (chosen_int, level_opt) with
+    | 4, Some level -> generate_board 4 level
+    | 9, Some level -> generate_board 9 level
+    | 16, _ -> make_sixteen_board (choose_random_file_path ())
     | _ -> failwith "Only 4x4, 9x9, or 16x16 boards supported"
   in
 
