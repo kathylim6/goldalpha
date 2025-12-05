@@ -507,8 +507,11 @@ let count_solutions board limit =
    own *)
 
 (** [make_unique] takes in an array of cells that represents a completely filled
-    in, valid board. It uses an algorithm to modify this board to make a new
-    random puzzle that has a unique solution which will then given to the user*)
+    in, valid board. It uses an algorithm (inspired by Peter Norvig's essay) to
+    modify this board to make a new random puzzle that has a unique solution
+    which will then given to the user. This function also takes in a [level] of
+    difficulty between 1-3, with level 1 being the easiest and 3 being the
+    hardest. *)
 let make_unique (board : cell array array) (level : int) =
   let coords = convert_to_cords board in
   Random.self_init ();
@@ -544,6 +547,7 @@ let make_unique (board : cell array array) (level : int) =
   ignore (remove 0);
   board
 
+(* helper boards for in-line tests *)
 let full_4x4 : cell array array =
   [|
     [| Initial 1; Initial 2; Initial 3; Initial 4 |];
