@@ -36,8 +36,8 @@ val choose_random_file_path : unit -> string
     puzzles*)
 
 val generate_board : int -> int -> cell array array
-(** [generate_board n] returns 2D cell array of a Sudoku board, depending on
-    [n]:
+(** [generate_board n level] returns 2D cell array of a Sudoku board, depending
+    on [n]. [level] is indicative of the level the user will play:
 
     - [n = 4] → 4×4 board
     - [n = 9] → 9×9 board

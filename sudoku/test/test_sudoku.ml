@@ -82,6 +82,296 @@ let boxes_are_distinct number board =
   !ok
 
 (* tests for generate_board 4 *)
+
+(* helper function to test generating boards *)
+let is_empty = function
+  | Empty -> true
+  | _ -> false
+
+let is_initial = function
+  | Initial _ -> true
+  | _ -> false
+
+let count_empties b =
+  Array.fold_left
+    (fun acc row ->
+      acc + Array.fold_left (fun a c -> if c = Empty then a + 1 else a) 0 row)
+    0 b
+
+(* easy level *)
+let test_board_size_4_lvl1 _ =
+  let b = generate_board 4 1 in
+  assert_bool "board must be 4 x 4"
+    (Array.length b = 4 && Array.for_all (fun row -> Array.length row = 4) b)
+
+let test_valid_cells_4_lvl1 _ =
+  let b = generate_board 4 1 in
+  assert_bool "all cells must be Initial 1..4 or Empty"
+    (Array.for_all (Array.for_all (valid_cell 4)) b)
+
+let test_rows_distinct_4_lvl1 _ =
+  let b = generate_board 4 1 in
+  assert_bool "rows distinct (lvl1)" (rows_are_distinct 4 b)
+
+let test_cols_distinct_4_lvl1 _ =
+  let b = generate_board 4 1 in
+  assert_bool "cols distinct (lvl1)" (cols_are_distinct 4 b)
+
+let test_boxes_distinct_4_lvl1 _ =
+  let b = generate_board 4 1 in
+  assert_bool "boxes distinct (lvl1)" (boxes_are_distinct 4 b)
+
+let test_board_size_9_lvl1 _ =
+  let b = generate_board 9 1 in
+  assert_bool "board must be 9 x 9"
+    (Array.length b = 9 && Array.for_all (fun row -> Array.length row = 9) b)
+
+let test_valid_cells_9_lvl1 _ =
+  let b = generate_board 9 1 in
+  assert_bool "all cells valid (lvl1)"
+    (Array.for_all (Array.for_all (valid_cell 9)) b)
+
+let test_rows_distinct_9_lvl1 _ =
+  let b = generate_board 9 1 in
+  assert_bool "rows distinct (lvl1)" (rows_are_distinct 9 b)
+
+let test_cols_distinct_9_lvl1 _ =
+  let b = generate_board 9 1 in
+  assert_bool "cols distinct (lvl1)" (cols_are_distinct 9 b)
+
+let test_boxes_distinct_9_lvl1 _ =
+  let b = generate_board 9 1 in
+  assert_bool "boxes distinct (lvl1)" (boxes_are_distinct 9 b)
+
+let test_lvl1_has_some_empties _ =
+  let b = generate_board 9 1 in
+  assert_bool "lvl1 must have at least one empty" (count_empties b > 0)
+
+let test_lvl1_not_mostly_empty _ =
+  let b = generate_board 9 1 in
+  assert_bool "lvl1 should not remove too many cells" (count_empties b < 40)
+
+let test_lvl1_empty_range _ =
+  let b = generate_board 9 1 in
+  let e = count_empties b in
+  assert_bool "lvl1 empties must be between 10 and 35" (e >= 10 && e <= 35)
+
+let test_lvl1_randomness _ =
+  let b1 = generate_board 9 1 in
+  let b2 = generate_board 9 1 in
+  assert_bool "lvl1 should generate different boards" (b1 <> b2)
+
+(* helper: count empties in a row *)
+let count_empties_row row =
+  let c = ref 0 in
+  Array.iter (fun cell -> if is_empty cell then incr c) row;
+  !c
+
+(* Level 1: rows mostly filled *)
+let test_lvl1_each_row_has_many_clues _ =
+  let b = generate_board 9 1 in
+  let ok = ref true in
+  Array.iter
+    (fun row ->
+      let empties = count_empties_row row in
+      if empties > 6 then ok := false)
+    b;
+  assert_bool "lvl1 rows should be mostly filled" !ok
+
+(* Level 1: row 0 not too sparse *)
+let test_lvl1_row0_not_sparse _ =
+  let b = generate_board 9 1 in
+  let empties = count_empties_row b.(0) in
+  assert_bool "lvl1 first row must not be too sparse" (empties <= 5)
+
+(* Level 1: boxes have at least 4 clues *)
+let test_lvl1_box_clues_min _ =
+  let b = generate_board 9 1 in
+  let valid = ref true in
+  for box = 0 to 8 do
+    let r = box / 3 * 3 in
+    let c = box mod 3 * 3 in
+    let clues = ref 0 in
+    for i = r to r + 2 do
+      for j = c to c + 2 do
+        if not (is_empty b.(i).(j)) then incr clues
+      done
+    done;
+    if !clues < 4 then valid := false
+  done;
+  assert_bool "lvl1 boxes should have ≥4 clues" !valid
+
+(* Level 1: ≥70% filled *)
+let test_lvl1_overall_density _ =
+  let b = generate_board 9 1 in
+  let empties = count_empties b in
+  assert_bool "lvl1: ≥70% filled" (empties <= 9 * 9 * 3 / 10)
+
+(* medium level *)
+(* Level 2: row empty count between 3 and 7 *)
+let test_lvl2_row_empty_range _ =
+  let b = generate_board 9 2 in
+  let ok = ref true in
+  Array.iter
+    (fun row ->
+      let n = count_empties_row row in
+      if n < 3 || n > 7 then ok := false)
+    b;
+  assert_bool "lvl2 rows Have 3–7 empties" !ok
+
+(* Level 2: at least one row has 6+ empties *)
+let test_lvl2_at_least_one_sparse_row _ =
+  let b = generate_board 9 2 in
+  let exists = ref false in
+  Array.iter
+    (fun row ->
+      let n = count_empties_row row in
+      if n >= 6 then exists := true)
+    b;
+  assert_bool "lvl2 must have at least one sparse row" !exists
+
+(* Level 2: boxes have 2–6 empties *)
+let test_lvl2_box_empty_range _ =
+  let b = generate_board 9 2 in
+  let ok = ref true in
+  for box = 0 to 8 do
+    let r = box / 3 * 3 in
+    let c = box mod 3 * 3 in
+    let empties = ref 0 in
+    for i = r to r + 2 do
+      for j = c to c + 2 do
+        if is_empty b.(i).(j) then incr empties
+      done
+    done;
+    if !empties < 2 || !empties > 6 then ok := false
+  done;
+  assert_bool "lvl2 boxes must have 2–6 empties" !ok
+
+(* Level 2: no two rows identical *)
+let test_lvl2_rows_not_identical _ =
+  let b = generate_board 9 2 in
+  let identical = ref false in
+  for i = 0 to 8 do
+    for j = i + 1 to 8 do
+      if b.(i) = b.(j) then identical := true
+    done
+  done;
+  assert_bool "lvl2 should not have identical rows" (not !identical)
+
+let test_board_size_4_lvl2 _ =
+  let b = generate_board 4 2 in
+  assert_bool "board must be 4 x 4"
+    (Array.length b = 4 && Array.for_all (fun row -> Array.length row = 4) b)
+
+let test_valid_cells_4_lvl2 _ =
+  let b = generate_board 4 2 in
+  assert_bool "all cells valid (lvl2)"
+    (Array.for_all (Array.for_all (valid_cell 4)) b)
+
+let test_rows_distinct_4_lvl2 _ =
+  let b = generate_board 4 2 in
+  assert_bool "rows distinct (lvl2)" (rows_are_distinct 4 b)
+
+let test_cols_distinct_4_lvl2 _ =
+  let b = generate_board 4 2 in
+  assert_bool "cols distinct (lvl2)" (cols_are_distinct 4 b)
+
+let test_boxes_distinct_4_lvl2 _ =
+  let b = generate_board 4 2 in
+  assert_bool "boxes distinct (lvl2)" (boxes_are_distinct 4 b)
+
+let test_board_size_9_lvl2 _ =
+  let b = generate_board 9 2 in
+  assert_bool "board must be 9 x 9"
+    (Array.length b = 9 && Array.for_all (fun row -> Array.length row = 9) b)
+
+let test_valid_cells_9_lvl2 _ =
+  let b = generate_board 9 2 in
+  assert_bool "all cells valid (lvl2)"
+    (Array.for_all (Array.for_all (valid_cell 9)) b)
+
+let test_rows_distinct_9_lvl2 _ =
+  let b = generate_board 9 2 in
+  assert_bool "rows distinct (lvl2)" (rows_are_distinct 9 b)
+
+let test_cols_distinct_9_lvl2 _ =
+  let b = generate_board 9 2 in
+  assert_bool "cols distinct (lvl2)" (cols_are_distinct 9 b)
+
+let test_boxes_distinct_9_lvl2 _ =
+  let b = generate_board 9 2 in
+  assert_bool "boxes distinct (lvl2)" (boxes_are_distinct 9 b)
+
+let test_lvl2_has_some_empties _ =
+  let b = generate_board 9 2 in
+  assert_bool "lvl2 must have empties" (count_empties b > 0)
+
+let test_lvl2_more_empties_than_lvl1 _ =
+  let b1 = generate_board 9 1 in
+  let b2 = generate_board 9 2 in
+  assert_bool "lvl2 must remove more clues than lvl1"
+    (count_empties b2 > count_empties b1)
+
+let test_lvl2_empty_range _ =
+  let b = generate_board 9 2 in
+  let e = count_empties b in
+  assert_bool "lvl2 empties should be between 30 and 55" (e >= 30 && e <= 55)
+
+let test_lvl2_randomness _ =
+  let b1 = generate_board 9 2 in
+  let b2 = generate_board 9 2 in
+  assert_bool "lvl2 should generate different boards" (b1 <> b2)
+
+(* hard level *)
+(* Level 3: a row with 7+ empties *)
+let test_lvl3_extremely_sparse_row _ =
+  let b = generate_board 9 3 in
+  let exists = ref false in
+  Array.iter (fun row -> if count_empties_row row >= 7 then exists := true) b;
+  assert_bool "lvl3 must have 7+ empties in a row" !exists
+
+(* Level 3: a box with 5+ empties *)
+let test_lvl3_sparse_box _ =
+  let b = generate_board 9 3 in
+  let found = ref false in
+  for box = 0 to 8 do
+    let r = box / 3 * 3 in
+    let c = box mod 3 * 3 in
+    let empties = ref 0 in
+    for i = r to r + 2 do
+      for j = c to c + 2 do
+        if is_empty b.(i).(j) then incr empties
+      done
+    done;
+    if !empties >= 5 then found := true
+  done;
+  assert_bool "lvl3 should have a sparse box" !found
+
+(* Level 3: at least 50 empties total *)
+let test_lvl3_minimum_empties _ =
+  let b = generate_board 9 3 in
+  let e = count_empties b in
+  assert_bool "lvl3 must have ≥50 empties" (e >= 50)
+
+(* Level 3: Column emptiness must vary *)
+let test_lvl3_column_variability _ =
+  let b = generate_board 9 3 in
+  let empties_per_col = Array.make 9 0 in
+  for col = 0 to 8 do
+    for row = 0 to 8 do
+      if is_empty b.(row).(col) then
+        empties_per_col.(col) <- empties_per_col.(col) + 1
+    done
+  done;
+  let min_e = ref 100 in
+  let max_e = ref 0 in
+  Array.iter
+    (fun e ->
+      if e < !min_e then min_e := e;
+      if e > !max_e then max_e := e)
+    empties_per_col;
+  assert_bool "lvl3 column variability must be ≥3" (!max_e - !min_e >= 3)
+
 let test_board_size_4 _ =
   let b = generate_board 4 3 in
   assert_bool "board must be 4 x 4"
@@ -105,6 +395,27 @@ let test_boxes_distinct_4 _ =
   let b = generate_board 4 3 in
   assert_bool "4x4 boxes must have distinct non-empty values"
     (boxes_are_distinct 4 b)
+
+let test_lvl3_has_many_empties _ =
+  let b = generate_board 9 3 in
+  assert_bool "lvl3 should remove many clues" (count_empties b >= 40)
+
+let test_lvl3_more_empties_than_lvl2 _ =
+  let b2 = generate_board 9 2 in
+  let b3 = generate_board 9 3 in
+  assert_bool "lvl3 must have more empties than lvl2"
+    (count_empties b3 > count_empties b2)
+
+let test_lvl3_empty_range _ =
+  let b = generate_board 9 3 in
+  let e = count_empties b in
+  assert_bool "lvl3 empty cell count should be between 45 and 70"
+    (e >= 45 && e <= 70)
+
+let test_lvl3_randomness _ =
+  let b1 = generate_board 9 3 in
+  let b2 = generate_board 9 3 in
+  assert_bool "lvl3 should generate different boards" (b1 <> b2)
 
 (* tests for generate_board 9 *)
 let test_board_size_9 _ =
@@ -519,6 +830,53 @@ let suite =
          "distinct rows 9" >:: test_rows_distinct_9;
          "distinct columns 9" >:: test_cols_distinct_9;
          "distinct boxes 9" >:: test_boxes_distinct_9;
+         "level 1 tests"
+         >::: [
+                "size 4 lvl1" >:: test_board_size_4_lvl1;
+                "valid cells 4 lvl1" >:: test_valid_cells_4_lvl1;
+                "distinct rows 4 lvl1" >:: test_rows_distinct_4_lvl1;
+                "distinct columns 4 lvl1" >:: test_cols_distinct_4_lvl1;
+                "distinct boxes 4 lvl1" >:: test_boxes_distinct_4_lvl1;
+                "size 9 lvl1" >:: test_board_size_9_lvl1;
+                "valid cells 9 lvl1" >:: test_valid_cells_9_lvl1;
+                "distinct rows 9 lvl1" >:: test_rows_distinct_9_lvl1;
+                "distinct columns 9 lvl1" >:: test_cols_distinct_9_lvl1;
+                "distinct boxes 9 lvl1" >:: test_boxes_distinct_9_lvl1;
+              ];
+         "extra level 1 tests"
+         >::: [
+                "lvl1 rows mostly filled" >:: test_lvl1_each_row_has_many_clues;
+                "lvl1 row0 not sparse" >:: test_lvl1_row0_not_sparse;
+                "lvl1 boxes ≥4 clues" >:: test_lvl1_box_clues_min;
+                "lvl1 ≥70 percent filled" >:: test_lvl1_overall_density;
+              ];
+         "level 2 tests"
+         >::: [
+                "size 4 lvl2" >:: test_board_size_4_lvl2;
+                "valid cells 4 lvl2" >:: test_valid_cells_4_lvl2;
+                "distinct rows 4 lvl2" >:: test_rows_distinct_4_lvl2;
+                "distinct columns 4 lvl2" >:: test_cols_distinct_4_lvl2;
+                "distinct boxes 4 lvl2" >:: test_boxes_distinct_4_lvl2;
+                "size 9 lvl2" >:: test_board_size_9_lvl2;
+                "valid cells 9 lvl2" >:: test_valid_cells_9_lvl2;
+                "distinct rows 9 lvl2" >:: test_rows_distinct_9_lvl2;
+                "distinct columns 9 lvl2" >:: test_cols_distinct_9_lvl2;
+                "distinct boxes 9 lvl2" >:: test_boxes_distinct_9_lvl2;
+              ];
+         "extra level 2 tests"
+         >::: [
+                "lvl2 row empties 3-7" >:: test_lvl2_row_empty_range;
+                "lvl2 one sparse row" >:: test_lvl2_at_least_one_sparse_row;
+                "lvl2 box empties range" >:: test_lvl2_box_empty_range;
+                "lvl2 no identical rows" >:: test_lvl2_rows_not_identical;
+              ];
+         "extra level 3 tests"
+         >::: [
+                "lvl3 row ≥7 empties" >:: test_lvl3_extremely_sparse_row;
+                "lvl3 sparse box" >:: test_lvl3_sparse_box;
+                "lvl3 ≥50 empties" >:: test_lvl3_minimum_empties;
+                "lvl3 column variability ≥3" >:: test_lvl3_column_variability;
+              ];
          "starts_with" >:: test_starts_with;
          "ends_with" >:: test_ends_with;
          "number_in_range" >:: test_number_in_range;
