@@ -7,7 +7,9 @@ type cell =
     program runs *)
 let () = Random.self_init ()
 
-(** [make_base_board] makes a generic, filled sudoku board *)
+(** [make_base_board size box_size] makes a generic, filled sudoku board of
+    dimensions [size × size] where [box_size] is the dimension of each subgrid.
+    Returns a 2D integer array representing a valid, complete sudoku board. *)
 let make_base_board size box_size =
   Array.init size (fun row_index ->
       Array.init size (fun col_index ->
@@ -36,9 +38,11 @@ let swap_cols board col1 col2 =
     row_index := !row_index + 1
   done
 
-(* [shuffle_rows_within_group] shuffles the rows that share a box -- boxes are
-   either 2x2 (for a 4x4 board), 3x3 (for a 9x9 board), or 4x4 (for a 16x16
-   board) *)
+(** [shuffle_rows_within_group board box_size] randomly shuffles rows within
+    their respective row groups (horizontal bands) in [board]. A row group
+    contains [box_size] rows. This maintains sudoku validity by only swapping
+    rows that share the same horizontal band of boxes. Modifies [board] in
+    place. *)
 let shuffle_rows_within_group board box_size =
   let size = Array.length board in
   let number_of_row_groups = size / box_size in
@@ -58,9 +62,11 @@ let shuffle_rows_within_group board box_size =
     row_group := !row_group + 1
   done
 
-(* [shuffle_cols_within_group] shuffles the columns that share a box -- boxes
-   are either 2x2 (for a 4x4 board), 3x3 (for a 9x9 board), or 4x4 (for a 16x16
-   board) *)
+(** [shuffle_cols_within_group board box_size] randomly shuffles columns within
+    their respective column groups (vertical bands) in [board]. A column group
+    contains [box_size] columns. This maintains sudoku validity by only swapping
+    columns that share the same vertical band of boxes. Modifies [board] in
+    place. *)
 let shuffle_cols_within_group board box_size =
   let size = Array.length board in
   let number_of_col_groups = size / box_size in
@@ -129,28 +135,27 @@ let%test "convert_csv handles only zeros" =
 
 [@@@coverage on]
 
-(* [choose_random_file_path] randomly chooses one out of 10 of the statically
-   typed filepaths in the data directory that contain already curated 16x16
-   puzzles*)
+(** [choose_random_file_path ()] randomly chooses one out of 10 of the
+    statically typed filepaths in the data directory that contain already
+    curated 16x16 puzzles*)
 let choose_random_file_path () =
   let rand_int = 1 + Random.int 3 in
   let filepath = "data/16board" ^ string_of_int rand_int ^ ".csv" in
   filepath
 
-(* [make_sixteen_board] returns a cell array array that represnts a 16x16 Sudoku
-   board, based off the CSV input data given through [filepath] *)
+(** [make_sixteen_board filepath] returns a cell array array that represents a
+    16x16 Sudoku board, based off the CSV input data given through [filepath] *)
 let make_sixteen_board filepath =
   let open Csv in
   let data = Csv.load filepath in
   convert_csv data
 
-(** let [repeat_string] is a helper function used to print multiple empty spaces
-    for proper lining of Sudoku map*)
+(** [repeat_string s n] returns a string consisting of [s] repeated [n] times.
+    Requires: [n >= 0]. *)
 let repeat_string s n = String.concat "" (List.init n (fun _ -> s))
 
-(** let [pad] is a helper function that takes in a string s and int max, padding
-    the appropriate amount of spaces on s for formatting. [max] must be greater
-    than 0*)
+(** [pad s max] returns string [s] padded with trailing spaces so that the total
+    length equals [max]. Requires: [max >= String.length s]. *)
 let pad s max =
   let spaces = max - String.length s in
   s ^ repeat_string " " spaces
@@ -168,7 +173,10 @@ let%test _ = pad "3" 2 = "3 "
 
 [@@@coverage on]
 
+(* ANSI color codes *)
 let blue = "\027[34m"
+let red = "\027[31m"
+let orange = "\027[38;5;208m"
 let reset = "\027[0m"
 
 (** [string_of_cell c max_len] returns a string representing cell [c], padded
@@ -184,6 +192,28 @@ let string_of_cell c max_len =
       ^ repeat_string " " (max_len - String.length val_str)
   | UserInput v -> pad (string_of_int v) max_len
 
+(** [string_of_cell_with_conflict c max_len is_conflict] returns a string
+    representing cell [c], with special coloring if [is_conflict] is true.
+    Conflicting cells are colored red (orange for Initial, regular red for
+    UserInput). *)
+let string_of_cell_with_conflict c max_len is_conflict =
+  match c with
+  | Empty -> pad "." max_len
+  | Initial v ->
+      let val_str = string_of_int v in
+      if is_conflict then
+        orange ^ val_str ^ reset
+        ^ repeat_string " " (max_len - String.length val_str)
+      else
+        blue ^ val_str ^ reset
+        ^ repeat_string " " (max_len - String.length val_str)
+  | UserInput v ->
+      let val_str = string_of_int v in
+      if is_conflict then
+        red ^ val_str ^ reset
+        ^ repeat_string " " (max_len - String.length val_str)
+      else pad val_str max_len
+
 [@@@coverage off]
 
 (* in-line test for [string_of_cell] *)
@@ -192,6 +222,12 @@ let%test "string_of_cell works on Empty/Initial/UserInput" =
   && string_of_cell (Initial 3) 1 = "\027[34m3\027[0m"
   && string_of_cell (UserInput 6) 1 = "6"
   && string_of_cell (UserInput 12) 2 = "12"
+
+let%test "string_of_cell_with_conflict works on Empty/Initial/UserInput" =
+  string_of_cell_with_conflict Empty 1 false = "."
+  && string_of_cell_with_conflict (Initial 3) 1 false = "\027[34m3\027[0m"
+  && string_of_cell_with_conflict (UserInput 6) 1 false = "6"
+  && string_of_cell_with_conflict (UserInput 12) 2 false = "12"
 
 [@@@coverage on]
 
@@ -215,6 +251,22 @@ let string_of_row input_row root =
          else string_of_cell x max_len)
        row_list)
 
+(** [string_of_row_with_conflicts input_row root conflict_positions row_index]
+    converts a sudoku row into a formatted string, highlighting cells in
+    [conflict_positions] with red coloring. *)
+let string_of_row_with_conflicts input_row root conflict_positions row_index =
+  let row_list = Array.to_list input_row in
+  let max_len = String.length (string_of_int (root * root)) in
+  String.concat " "
+    (List.mapi
+       (fun col_index x ->
+         let is_conflict = List.mem (row_index, col_index) conflict_positions in
+         let cell_str = string_of_cell_with_conflict x max_len is_conflict in
+         if col_index mod root = 0 then "|" ^ cell_str
+         else if col_index = (root * root) - 1 then cell_str ^ "|"
+         else cell_str)
+       row_list)
+
 [@@@coverage off]
 
 (* in-line test for [string_of_row] *)
@@ -228,9 +280,9 @@ let%test "string_of_row creates rows correctly" =
 
 [@@@coverage on]
 
-(** let [string_of_board] is a function that converts the entire cell array
-    array board into a printable string by calling helper functions such as let
-    [string_of_row] and let [string_of_cell]*)
+(** [string_of_board input_board] is a function that converts the entire cell
+    array array board into a printable string by calling helper functions such
+    as let [string_of_row] and let [string_of_cell]*)
 let string_of_board input_board : string =
   let board_size = float_of_int (Array.length input_board) in
   let root = int_of_float (sqrt board_size) in
@@ -254,12 +306,39 @@ let string_of_board input_board : string =
          else string_of_row x root ^ "\n")
        board_list)
 
+(** [string_of_board_with_conflicts input_board conflict_positions] converts the
+    entire board into a printable string, highlighting conflicting cells. *)
+let string_of_board_with_conflicts input_board conflict_positions : string =
+  let board_size = float_of_int (Array.length input_board) in
+  let root = int_of_float (sqrt board_size) in
+  let board_list = Array.to_list input_board in
+  String.concat ""
+    (List.mapi
+       (fun i x ->
+         if i mod root = 0 then
+           repeat_string "-"
+             (int_of_float board_size
+              * (2 + abs (1 - String.length (string_of_int (root * root))))
+             + root)
+           ^ "\n"
+           ^ string_of_row_with_conflicts x root conflict_positions i
+           ^ "\n"
+         else if i = (root * root) - 1 then
+           string_of_row_with_conflicts x root conflict_positions i
+           ^ "\n"
+           ^ repeat_string "-"
+               (int_of_float board_size
+                * (2 + abs (1 - String.length (string_of_int (root * root))))
+               + root)
+           ^ "\n"
+         else string_of_row_with_conflicts x root conflict_positions i ^ "\n")
+       board_list)
+
 (** [convert_to_cords] takes in a board represented by an array of array of
     cells and outputs an array of tuples of coordinates. The first two ints
     represent the coordinate position of the cell in the sudoku board.
     [convert_to_cords] is used as a helper in the creation of the puzzle. *)
-let convert_to_cords (board : cell array array) (level : int) :
-    (int * int) array =
+let convert_to_cords (board : cell array array) : (int * int) array =
   let board_dim = Array.length board in
   let result = Array.make (board_dim * board_dim) (0, 0) in
   let k = ref 0 in
@@ -283,7 +362,7 @@ let%test "convert_to_cords: 4x4 board" =
       [| Empty; Empty; Empty; Empty |];
     |]
   in
-  convert_to_cords board 3
+  convert_to_cords board
   = [|
       (0, 0);
       (0, 1);
@@ -305,13 +384,13 @@ let%test "convert_to_cords: 4x4 board" =
 
 let%test "convert_to_cords 9x9 length" =
   let board = Array.make_matrix 9 9 Empty in
-  let coords = convert_to_cords board 3 in
+  let coords = convert_to_cords board in
   Array.length coords = 81
 
 (* only spot-check a different coordinates for 9x9 boards and 16x16 boards*)
 let%test "convert_to_cords 9x9 ordering" =
   let board = Array.make_matrix 9 9 (Initial 5) in
-  let coords = convert_to_cords board 3 in
+  let coords = convert_to_cords board in
   coords.(0) = (0, 0)
   && coords.(1) = (0, 1)
   && coords.(8) = (0, 8)
@@ -320,12 +399,12 @@ let%test "convert_to_cords 9x9 ordering" =
 
 let%test "convert_to_cords 16x16 length" =
   let board = Array.make_matrix 16 16 Empty in
-  let coords = convert_to_cords board 3 in
+  let coords = convert_to_cords board in
   Array.length coords = 256
 
 let%test "convert_to_cords 16x16 ordering spot check" =
   let board = Array.make_matrix 16 16 (Initial 3) in
-  let coords = convert_to_cords board 3 in
+  let coords = convert_to_cords board in
   coords.(0) = (0, 0)
   && coords.(1) = (0, 1)
   && coords.(15) = (0, 15)
@@ -334,6 +413,11 @@ let%test "convert_to_cords 16x16 ordering spot check" =
 
 [@@@coverage on]
 
+(** [valid board check pos] returns [true] if placing value [check] at position
+    [pos] (row, col) would be valid according to sudoku rules (no duplicates in
+    row, column, or subgrid). Returns [false] if the placement violates any
+    rule. Only checks [Initial] cells; raises [Failure] if it encounters
+    [UserInput]. *)
 let valid (board : cell array array) (check : int) (pos : int * int) : bool =
   let row = fst pos in
   let col = snd pos in
@@ -374,6 +458,9 @@ let valid (board : cell array array) (check : int) (pos : int * int) : bool =
     true
   with Exit -> false
 
+(** [find_empty board] returns [Some (row, col)] for the first empty cell found
+    in row-major order, or [None] if the board is completely filled. Raises
+    [Failure] if it encounters a [UserInput] cell. *)
 let find_empty (board : cell array array) : (int * int) option =
   let dim = Array.length board in
   let rec search_row r =
@@ -391,7 +478,9 @@ let find_empty (board : cell array array) : (int * int) option =
   in
   search_row 0
 
-(* Helper: count solutions, stopping at limit *)
+(** [count_solutions board limit] counts the number of valid solutions for
+    [board], stopping once [limit] solutions are found. Uses backtracking to
+    explore possible completions. Returns the count (up to [limit]). *)
 let count_solutions board limit =
   let dim = Array.length board in
   let rec backtrack count =
@@ -416,14 +505,21 @@ let count_solutions board limit =
     in, valid board. It uses an algorithm to modify this board to make a new
     random puzzle that has a unique solution which will then given to the user*)
 let make_unique (board : cell array array) (level : int) =
-  let coords = convert_to_cords board level in
+  let coords = convert_to_cords board in
   Random.self_init ();
   Array.shuffle ~rand:(fun n -> Random.int n) coords;
+  let proportion = if level = 1 then 0.5 else if level = 2 then 0.75 else 1.0 in
+  let board_dim = Array.length board in
+  let total_cells = board_dim * board_dim in
+  let rounded_proportion =
+    int_of_float (float_of_int total_cells *. proportion)
+  in
+  let coord_with_level = Array.sub coords 0 rounded_proportion in
 
   let rec remove index =
-    if index = Array.length coords then true
+    if index = Array.length coord_with_level then true
     else
-      let r, c = coords.(index) in
+      let r, c = coord_with_level.(index) in
       match board.(r).(c) with
       | Empty -> remove (index + 1)
       | Initial n ->
@@ -459,13 +555,89 @@ let puzzle_4x4 : cell array array =
     [| Initial 4; Empty; Initial 1; Initial 2 |];
   |]
 
-(** [empty_n] makes board like full_4x4 but with a single empty at (r,c) let
-    board_with_empty base (r, c) = let n = Array.length base in let b =
-    Array.init n (fun i -> Array.copy base.(i)) in b.(r).(c) <- Empty; b *)
+(** [empty_n n] creates an [n × n] board filled entirely with [Empty] cells. *)
 let empty_n n = Array.make_matrix n n Empty
 
 [@@@coverage off]
 
+(* Helper: deep copy a board *)
+let copy_board (b : cell array array) = Array.map Array.copy b
+
+(* Helper: count empties *)
+let count_empty (b : cell array array) =
+  let total = ref 0 in
+  Array.iter
+    (fun row -> Array.iter (fun c -> if c = Empty then incr total) row)
+    b;
+  !total
+
+(* ---------- LEVEL 1 TESTS (proportion = 0.5) ---------- *)
+
+let%test "make_unique_level1_has_unique_solution_1" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 1 in
+  count_solutions p 2 = 1
+
+let%test "make_unique_level1_valid_board_2" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 1 in
+  count_solutions p 2 = 1
+
+let%test "make_unique_level1_removes_about_half_3" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 1 in
+  let empties = count_empty p in
+  empties >= 4 && empties <= 12
+
+let%test "make_unique_level1_modifies_board_4" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 1 in
+  p <> full_4x4
+
+let%test "make_unique_level1_does_not_add_cells_5" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 1 in
+  let filled_after =
+    Array.fold_left
+      (fun acc row ->
+        acc + Array.fold_left (fun a c -> if c <> Empty then a + 1 else a) 0 row)
+      0 p
+  in
+  filled_after <= 16
+
+(* ---------- LEVEL 2 TESTS (proportion = 0.75) ---------- *)
+
+let%test "make_unique_level2_has_unique_solution_1" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 2 in
+  count_solutions p 2 = 1
+
+let%test "make_unique_level2_valid_board_2" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 2 in
+  count_solutions p 2 = 1
+
+let%test "make_unique_level2_removes_about_75percent_3" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 2 in
+  let empties = count_empty p in
+  empties >= 2 && empties <= 14
+
+let%test "make_unique_level2_modifies_board_4" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 2 in
+  p <> full_4x4
+
+let%test "make_unique_level2_does_not_add_cells_5" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 2 in
+  let filled_after =
+    Array.fold_left
+      (fun acc row ->
+        acc + Array.fold_left (fun a c -> if c <> Empty then a + 1 else a) 0 row)
+      0 p
+  in
+  filled_after <= 16
 (* in-line tests for checking [valid] *)
 
 let%test "valid: permit placing value when not present in row/col/box (4x4)" =
@@ -559,8 +731,8 @@ let generate_board num level =
   | 9 -> make_unique (make_nine_board ()) level
   | _ -> failwith "Only 4x4 and 9x9 boards supported for random generation"
 
-(** [check_valid_row] checks that there are no overlapping values between the
-    user input and the row the user place the number in *)
+(** [check_valid_row user_input board row] checks that there are no overlapping
+    values between the user input and the row the user place the number in *)
 let check_valid_row (user_input : int) (board : cell array array) (row : int) :
     bool =
   let row_to_check = board.(row) in
@@ -606,8 +778,8 @@ let%test "empty_row" = check_valid_row 5 board 2 = false
 
 [@@@coverage on]
 
-(** [convert_column_to_arr] converts the given column of a board to an array
-    that can be easily parsed*)
+(** [convert_column_to_arry game_board column_to_convert] extracts column
+    [column_to_convert] from [game_board] and returns it as a cell array. *)
 let convert_column_to_arry (game_board : cell array array)
     (column_to_convert : int) : cell array =
   let height_of_board = Array.length game_board in
@@ -617,8 +789,9 @@ let convert_column_to_arry (game_board : cell array array)
   done;
   new_arr
 
-(** [check_valid_col] checks that there are no overlapping values between the
-    user input and the column the user places the number in *)
+(** [check_valid_col user_input board column] checks that there are no
+    overlapping values between the user input and the column the user places the
+    number in *)
 let check_valid_col (user_input : int) (board : cell array array) (column : int)
     : bool =
   let arr_to_check = convert_column_to_arry board column in
@@ -630,8 +803,8 @@ let check_valid_col (user_input : int) (board : cell array array) (column : int)
   in
   res
 
-(** [generate_box_array] generates an array of cell type values of the
-    sub-grid/box that the user inputs their number in *)
+(** [generate_box_array board row col] extracts all cells from the subgrid/box
+    containing position ([row], [col]) and returns them as a cell array. *)
 let generate_box_array (board : cell array array) (row : int) (col : int) :
     cell array =
   let n = Array.length board in
@@ -652,8 +825,9 @@ let generate_box_array (board : cell array array) (row : int) (col : int) :
 
   new_arr
 
-(** [check_valid_box] checks that there are no overlapping values between the
-    user input and the box the user places the number in *)
+(** [check_valid_box user_input board row col] checks that there are no
+    overlapping values between the user input and the box the user places the
+    number in *)
 let check_valid_box (user_input : int) (board : cell array array) (row : int)
     (col : int) : bool =
   let array_to_check = generate_box_array board row col in
@@ -665,11 +839,124 @@ let check_valid_box (user_input : int) (board : cell array array) (row : int)
   in
   res
 
-(** [check_invalid_input] returns a boolean which is representative of whether
-    the user's input follows the constraints of the Sudoku game or not *)
+(** [check_invalid_input input row col board] returns a boolean which is
+    representative of whether the user's input follows the constraints of the
+    Sudoku game or not *)
 let check_invalid_input (input : int) (row : int) (col : int)
     (board : cell array array) : bool =
   let violates_row = check_valid_row input board row in
   let violates_col = check_valid_col input board col in
   let violates_box = check_valid_box input board row col in
   violates_row || violates_col || violates_box
+
+(** [find_conflicts board row col value] returns a list of (row, col) positions
+    that conflict with placing [value] at position ([row], [col]). Includes
+    conflicts in the same row, column, and box. *)
+let find_conflicts board row col value =
+  let n = Array.length board in
+  let box_size = int_of_float (sqrt (float_of_int n)) in
+  let conflicts = ref [] in
+
+  (* Helper to check if cell matches the value *)
+  let cell_matches r c =
+    match board.(r).(c) with
+    | Initial v -> v = value
+    | UserInput v -> v = value
+    | Empty -> false
+  in
+
+  (* Check row conflicts *)
+  for c = 0 to n - 1 do
+    if c <> col && cell_matches row c then conflicts := (row, c) :: !conflicts
+  done;
+
+  (* Check column conflicts *)
+  for r = 0 to n - 1 do
+    if r <> row && cell_matches r col then conflicts := (r, col) :: !conflicts
+  done;
+
+  (* Check box conflicts *)
+  let box_row = row / box_size * box_size in
+  let box_col = col / box_size * box_size in
+  for r = box_row to box_row + box_size - 1 do
+    for c = box_col to box_col + box_size - 1 do
+      if (r <> row || c <> col) && cell_matches r c then
+        if not (List.mem (r, c) !conflicts) then
+          conflicts := (r, c) :: !conflicts
+    done
+  done;
+
+  !conflicts
+
+(** [is_board_complete board] returns [true] if all cells on the board are
+    filled (no Empty cells remain), [false] otherwise. *)
+let is_board_complete board =
+  Array.for_all
+    (Array.for_all (function
+      | Empty -> false
+      | Initial _ | UserInput _ -> true))
+    board
+
+(** [is_board_valid board] returns [true] if the board is completely filled and
+    has no conflicts (all rows, columns, and boxes contain distinct values). *)
+let is_board_valid board =
+  let n = Array.length board in
+  let box_size = int_of_float (sqrt (float_of_int n)) in
+
+  (* Check all rows *)
+  let rows_valid =
+    Array.for_all
+      (fun row ->
+        let values =
+          Array.fold_left
+            (fun acc cell ->
+              match cell with
+              | Initial v | UserInput v -> v :: acc
+              | Empty -> acc)
+            [] row
+        in
+        List.length values = List.length (List.sort_uniq compare values))
+      board
+  in
+
+  (* Check all columns *)
+  let cols_valid =
+    let rec check_col col =
+      if col >= n then true
+      else
+        let values =
+          Array.fold_left
+            (fun acc row ->
+              match row.(col) with
+              | Initial v | UserInput v -> v :: acc
+              | Empty -> acc)
+            [] board
+        in
+        List.length values = List.length (List.sort_uniq compare values)
+        && check_col (col + 1)
+    in
+    check_col 0
+  in
+
+  (* Check all boxes *)
+  let boxes_valid =
+    let rec check_box box_row box_col =
+      if box_row >= n then true
+      else if box_col >= n then check_box (box_row + box_size) 0
+      else
+        let values = ref [] in
+        for r = box_row to box_row + box_size - 1 do
+          for c = box_col to box_col + box_size - 1 do
+            match board.(r).(c) with
+            | Initial v | UserInput v -> values := v :: !values
+            | Empty -> ()
+          done
+        done;
+        let sorted = List.sort_uniq compare !values in
+        List.length !values = List.length sorted
+        && check_box box_row (box_col + box_size)
+    in
+    check_box 0 0
+  in
+
+  rows_valid && cols_valid && boxes_valid
