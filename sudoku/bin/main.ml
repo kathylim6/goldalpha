@@ -244,7 +244,9 @@ let () =
 
               print_endline
                 (red ^ "This input violates the rules of Sudoku!" ^ reset);
-              print_endline "What you attempted:";
+              print_endline
+                "What you attempted (this input is not saved, so no need to \
+                 delete your most recent move):";
               print_endline
                 (string_of_board_with_conflicts temp_board all_conflicts))
             else (
@@ -278,7 +280,9 @@ let () =
                    ^ reset))
         | _ ->
             print_endline
-              (red ^ "Invalid input format! Use: row col value" ^ reset)
+              (red
+             ^ "Invalid input format! Use: row col value (please make sure you \
+                have no trailing spaces!)" ^ reset)
       with
       | Invalid_argument _ ->
           print_endline (red ^ "Invalid number format!" ^ reset)

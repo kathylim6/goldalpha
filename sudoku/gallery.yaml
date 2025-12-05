@@ -21,7 +21,7 @@ title: "Sudoku: an OCaml edition"
 # OK if this is a Cornell Github link, but public gallery viewers won't be able to see it.
 git-repo: "https://github.com/kathylim6/goldalpha"
 # Replace the URL with your own demo video.
-demo-video-url: https://drive.google.com/file/d/1t7tgjjzb2lyrEfnHYjQ87OoQwHfchHGo/view?usp=sharing 
+demo-video-url: [FIX DEMO VIDEO]]
 # Write a short, attention-grabbing description of your project.
 desc: >
   Our project is an interactive Sudoku game. It supports 4x4, 9x9, and
@@ -39,3 +39,9 @@ desc: >
   to give their guesses for the missing words and returning whether their 
   guess results in an invalid Sudoku board. It will also return once the 
   Sudoku board has been properly solved!
+
+  You can also choose difficulty levels (easy, medium, hard) for the 
+  4x4 and 9x9 boards. The 16x16 board is just one level. You can
+  also view the history of the moves that you made after you either
+  quit the game or solve the puzzle, including full move history
+  and valid move history. 
