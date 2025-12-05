@@ -277,13 +277,17 @@ let () =
   if history_reponse = "V" || history_reponse = "v" then
     let reversed_history = List.rev !valid_history in
     let history_length = List.length reversed_history in
-    for i = 0 to history_length - 1 do
-      print_endline (List.nth reversed_history i)
-    done
+    if history_length = 0 then print_endline "You haven't made any valid moves."
+    else
+      for i = 0 to history_length - 1 do
+        print_endline (List.nth reversed_history i)
+      done
   else if history_reponse = "F" || history_reponse = "f" then
     let reversed_history = List.rev !full_history in
     let history_length = List.length reversed_history in
-    for i = 0 to history_length - 1 do
-      print_endline (List.nth reversed_history i)
-    done
+    if history_length = 0 then print_endline "You haven't made any moves."
+    else
+      for i = 0 to history_length - 1 do
+        print_endline (List.nth reversed_history i)
+      done
   else print_endline "Have a nice rest of your day!"
