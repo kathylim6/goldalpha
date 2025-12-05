@@ -170,6 +170,21 @@ let () =
   in
 
   print_newline ();
+  print_endline "\nBefore we start, let's review the color codes of our board.";
+  print_newline ();
+  print_endline
+    "\027[34mBlue\027[0m numbers are from the initial puzzle, these cannot be \
+     modified.\n\n\
+     Black numbers are the input you put in; you can change or delete these as \
+     you please\n\n\
+     \027[31mRed\027[0m numbers mean that there is a conflict between that \
+     number (which is user input) and another number on the board. You should \
+     change these numbers.\n\n\
+     \027[38;5;208mOrange\027[0m numbers mean that there is a conflict between \
+     that number (which is an initial value) and another number on the board. \n\
+     Since you cannot change initial values, you should change the other \
+     number that it is conflicting with";
+  print_newline ();
   print_endline "Here is your board:";
   print_endline (string_of_board board);
 

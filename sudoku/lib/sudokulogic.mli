@@ -9,12 +9,13 @@ val string_of_board : cell array array -> string
 (** [string_of_board board] converts the entire Sudoku board into a printable
     multi-line string.
 
-    Behavior:
-    - Determines board size n×n automatically.
-    - Computes [root = sqrt n].
-    - Uses [string_of_row] to format each row.
-    - Inserts horizontal divider lines made of dashes between subgrids and at
-      the top/bottom of the board.
+    It uses ANSI Terminal coloring to differentiate between initial cell values,
+    user input cell values, and any violations. Below are the coloring codes for
+    our puzzle
+    - Blue: Initial values given by puzzle
+    - Black: User input
+    - Orange: If there is a conflict and the cell is an initial value
+    - Red: If there is a conflict and the cell is a user input
 
     The output is a fully formatted human-readable Sudoku grid. *)
 
