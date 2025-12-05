@@ -156,9 +156,18 @@ let () =
          Level 1 Easy    : (1)\n\
          Level 2 Medium  : (2)\n\
          Level 3 Hard    : (3)\n";
-      let pre_processed_level = read_line () in
-      let level = int_of_string pre_processed_level in
-      print_endline ("You are playing at level " ^ pre_processed_level);
+      let pre_processed_level = ref (read_line ()) in
+      while
+        !pre_processed_level <> "1"
+        && !pre_processed_level <> "2"
+        && !pre_processed_level <> "3"
+      do
+        print_endline
+          "That wasn't a valid input, try again. Respond with (1), (2), or (3).";
+        pre_processed_level := read_line ()
+      done;
+      let level = int_of_string !pre_processed_level in
+      print_endline ("You are playing at level " ^ !pre_processed_level);
       Some level)
     else None
   in

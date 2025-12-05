@@ -501,6 +501,11 @@ let count_solutions board limit =
   in
   backtrack 0
 
+(* The board generation algorithm is inspired by Peter Norvig's famous 2006
+   essay about solving Sudoku puzzles, found here:
+   https://norvig.com/sudoku.html. Accesssed 12/5/2025. All code below is our
+   own *)
+
 (** [make_unique] takes in an array of cells that represents a completely filled
     in, valid board. It uses an algorithm to modify this board to make a new
     random puzzle that has a unique solution which will then given to the user*)
@@ -558,8 +563,6 @@ let puzzle_4x4 : cell array array =
 (** [empty_n n] creates an [n × n] board filled entirely with [Empty] cells. *)
 let empty_n n = Array.make_matrix n n Empty
 
-[@@@coverage off]
-
 (* Helper: deep copy a board *)
 let copy_board (b : cell array array) = Array.map Array.copy b
 
@@ -571,7 +574,7 @@ let count_empty (b : cell array array) =
     b;
   !total
 
-(* ---------- LEVEL 1 TESTS (proportion = 0.5) ---------- *)
+[@@@coverage off]
 
 let%test "make_unique_level1_has_unique_solution_1" =
   let b = copy_board full_4x4 in
@@ -605,8 +608,6 @@ let%test "make_unique_level1_does_not_add_cells_5" =
   in
   filled_after <= 16
 
-(* ---------- LEVEL 2 TESTS (proportion = 0.75) ---------- *)
-
 let%test "make_unique_level2_has_unique_solution_1" =
   let b = copy_board full_4x4 in
   let p = make_unique b 2 in
@@ -638,6 +639,12 @@ let%test "make_unique_level2_does_not_add_cells_5" =
       0 p
   in
   filled_after <= 16
+
+let%test "make_unique level3 has unique solution" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 3 in
+  count_solutions p 2 = 1
+
 (* in-line tests for checking [valid] *)
 
 let%test "valid: permit placing value when not present in row/col/box (4x4)" =
