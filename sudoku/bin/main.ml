@@ -175,11 +175,12 @@ let () =
   print_endline
     "\027[34mBlue\027[0m numbers are from the initial puzzle, these cannot be \
      modified.\n\n\
-     Black numbers are the input you put in; you can change or delete these as \
+     White numbers are the input you put in; you can change or delete these as \
      you please\n\n\
      \027[31mRed\027[0m numbers mean that there is a conflict between that \
      number (which is user input) and another number on the board. You should \
-     change these numbers.\n\n\
+     change these numbers. Note that we will display your input with red, but \
+     it will not actually be loaded into the board.\n\n\
      \027[38;5;208mOrange\027[0m numbers mean that there is a conflict between \
      that number (which is an initial value) and another number on the board. \n\
      Since you cannot change initial values, you should change the other \
@@ -194,7 +195,7 @@ let () =
   let playing = ref true in
   while !playing do
     print_endline "\nEnter row, column, and value (e.g., '0 1 5')";
-    print_endline "Enter '0' as the value to delete a cell, or 'quit' to exit:";
+    print_endline "Enter '0' as the value to delete a cell, or 'quit' to exit.:";
     let input = read_line () in
     if input = "quit" then playing := false
     else begin
