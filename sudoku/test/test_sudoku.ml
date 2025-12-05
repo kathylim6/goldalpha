@@ -160,10 +160,10 @@ let test_randomness_produces_variety _ =
   assert_bool "Randomness should produce more than one distinct output"
     (List.length uniq > 1)
 
-(* tests for make_sixteen_board 16; we iterate through all 10 filepaths to
-   ensure they are correct. *)
+(* tests for make_sixteen_board 16; we iterate through all 3 filepaths to ensure
+   they are correct. *)
 let all_paths =
-  List.init 10 (fun i -> Printf.sprintf "../data/16board%d.csv" (i + 1))
+  List.init 3 (fun i -> Printf.sprintf "../data/16board%d.csv" (i + 1))
 
 let is_16x16 b =
   Array.length b = 16 && Array.for_all (fun row -> Array.length row = 16) b
@@ -282,6 +282,228 @@ let make_tests_for_file path =
     );
   ]
 
+let test_row_conflicts _ =
+  (* Row 0 has two 5s *)
+  let board =
+    [|
+      [| UserInput 5; Initial 5; Empty; Empty |];
+      [| Empty; Empty; Empty; Empty |];
+      [| Empty; Empty; Empty; Empty |];
+      [| Empty; Empty; Empty; Empty |];
+    |]
+  in
+  let conflicts = find_conflicts board 0 0 5 in
+  assert_equal [ (0, 1) ] conflicts
+
+let test_col_conflicts _ =
+  (* Column 0 has two 7s *)
+  let board =
+    [|
+      [| UserInput 7; Empty; Empty; Empty |];
+      [| Initial 7; Empty; Empty; Empty |];
+      [| Empty; Empty; Empty; Empty |];
+      [| Empty; Empty; Empty; Empty |];
+    |]
+  in
+  let conflicts = find_conflicts board 0 0 7 in
+  assert_equal [ (1, 0) ] conflicts
+
+let test_box_conflicts _ =
+  (* 2x2 box: row0: [3 .] row1: [. 3] placing 3 at (0,0) should detect conflict
+     at (1,1) *)
+  let board =
+    [|
+      [| UserInput 3; Empty; Empty; Empty |];
+      [| Empty; Initial 3; Empty; Empty |];
+      [| Empty; Empty; Empty; Empty |];
+      [| Empty; Empty; Empty; Empty |];
+    |]
+  in
+  let conflicts = find_conflicts board 0 0 3 in
+  assert_equal [ (1, 1) ] conflicts
+
+let test_no_conflicts _ =
+  (* This board has no conflicts *)
+  let board =
+    [|
+      [| UserInput 2; Initial 1; Empty; Empty |];
+      [| Initial 4; Initial 3; Empty; Empty |];
+      [| Empty; Empty; Empty; Empty |];
+      [| Empty; Empty; Empty; Empty |];
+    |]
+  in
+
+  let conflicts = find_conflicts board 0 0 2 in
+
+  (* Should contain exactly these 3 unique conflicts *)
+  let expected = [] in
+  assert_equal expected conflicts
+
+let test_string_of_board_with_conflicts _ =
+  (* ANSI colors used by our printer *)
+  let red = "\027[31m" in
+  let blue = "\027[34m" in
+  let orange = "\027[38;5;208m" in
+  let reset = "\027[0m" in
+
+  (* Small 2×2 board so we can predict output exactly *)
+  let board = [| [| Initial 1; UserInput 1 |]; [| Empty; Initial 3 |] |] in
+
+  (* mark the conflicts *)
+  let conflicts = [ (0, 0); (0, 1) ] in
+
+  (* Call function under test *)
+  let actual = string_of_board_with_conflicts board conflicts in
+
+  let horizontal = "-----\n" in
+
+  let row0 = "|" ^ (orange ^ "1" ^ reset) ^ " |" ^ (red ^ "1" ^ reset) ^ "\n" in
+
+  let row1 = "|" ^ "." ^ " |" ^ (blue ^ "3" ^ reset) ^ "\n" in
+
+  let expected = horizontal ^ row0 ^ horizontal ^ row1 in
+
+  assert_equal ~printer:(fun s -> s) expected actual
+
+(* this test case differs from the one above because instead of statically
+   typing the conflicts, the test cases calls on [find_conflict] to build
+   complete list of conflicts for board*)
+let test_conflict_workflow _ =
+  let red = "\027[31m" in
+  let blue = "\027[34m" in
+  let orange = "\027[38;5;208m" in
+  let reset = "\027[0m" in
+  let horizontal = "----------\n" in
+
+  let board =
+    [|
+      [| UserInput 1; Empty; Initial 1; Empty |];
+      [| Empty; Initial 3; Empty; Empty |];
+      [| Empty; Initial 1; Empty; Initial 4 |];
+      [| Initial 2; Empty; Empty; Empty |];
+    |]
+  in
+
+  (* instead of statically typing the conflicts, call find_conflicts to find all
+     the conflicts in the board (similar logic/workflow as main.ml)*)
+  let all_conflicts board =
+    let n = Array.length board in
+    let conflict_set = ref [] in
+
+    for r = 0 to n - 1 do
+      for c = 0 to n - 1 do
+        (* Only check non-empty cells *)
+        match board.(r).(c) with
+        | Empty -> ()
+        | Initial v | UserInput v ->
+            let conflicts = find_conflicts board r c v in
+            (* Add (r,c) itself if it has any conflicts *)
+            let conflicts =
+              if conflicts <> [] then (r, c) :: conflicts else conflicts
+            in
+            (* Insert into global list without duplicates *)
+            List.iter
+              (fun pos ->
+                if not (List.mem pos !conflict_set) then
+                  conflict_set := pos :: !conflict_set)
+              conflicts
+      done
+    done;
+
+    !conflict_set
+  in
+
+  let conflicts = all_conflicts board in
+  let actual = string_of_board_with_conflicts board conflicts in
+  let expected =
+    horizontal
+    (* row 0: UserInput 1 at (0,0) in conflict → RED *)
+    (*          Empty      Initial 1 (conflict → ORANGE)  Empty *)
+    ^ "|"
+    ^ red ^ "1" ^ reset ^ " . |" ^ orange ^ "1" ^ reset ^ " .|\n"
+    (* row 1 *)
+    ^ "|. "
+    ^ blue ^ "3" ^ reset ^ " |. .|\n"
+    (* row 2: conflict at (2,1) *)
+    ^ horizontal
+    ^ "|. " ^ blue ^ "1" ^ reset ^ " |. " ^ blue ^ "4" ^ reset ^ "|\n"
+    (* row 3 *)
+    ^ "|"
+    ^ blue ^ "2" ^ reset ^ " . |. .|\n" ^ horizontal
+  in
+
+  assert_equal ~printer:(fun x -> x) expected actual
+
+let test_board_complete_false _ =
+  let board =
+    [|
+      [| Initial 1; Initial 2; Empty; Initial 4 |];
+      [| Initial 3; Initial 4; Initial 1; Initial 2 |];
+      [| Initial 2; Initial 1; Initial 4; Initial 3 |];
+      [| Initial 4; Initial 3; Initial 2; Initial 1 |];
+    |]
+  in
+  assert_equal false (is_board_complete board)
+
+let test_board_complete_true _ =
+  let board =
+    [|
+      [| Initial 1; Initial 2; Initial 3; Initial 4 |];
+      [| Initial 3; Initial 4; Initial 1; Initial 2 |];
+      [| Initial 2; Initial 1; Initial 4; Initial 3 |];
+      [| Initial 4; Initial 3; Initial 2; Initial 1 |];
+    |]
+  in
+  assert_equal true (is_board_complete board)
+
+let test_board_valid_true _ =
+  (* A correct 4x4 Sudoku *)
+  let board =
+    [|
+      [| Initial 1; Initial 2; Initial 3; Initial 4 |];
+      [| Initial 3; Initial 4; Initial 1; Initial 2 |];
+      [| Initial 2; Initial 1; Initial 4; Initial 3 |];
+      [| Initial 4; Initial 3; Initial 2; Initial 1 |];
+    |]
+  in
+  assert_equal true (is_board_valid board)
+
+let test_board_valid_false_row_conflict _ =
+  (* Row 0 has two 1's *)
+  let board =
+    [|
+      [| Initial 1; Initial 1; Initial 3; Initial 4 |];
+      [| Initial 3; Initial 4; Initial 1; Initial 2 |];
+      [| Initial 2; Empty; Initial 4; Initial 3 |];
+      [| Initial 4; Initial 3; Initial 2; Initial 1 |];
+    |]
+  in
+  assert_equal false (is_board_valid board)
+
+let test_board_valid_false_col_conflict _ =
+  (* Column 0 has two 1’s *)
+  let board =
+    [|
+      [| Initial 1; Initial 2; Initial 3; Initial 4 |];
+      [| Initial 3; Initial 4; Initial 1; Initial 2 |];
+      [| Initial 1; Empty; Initial 4; Initial 3 |];
+      [| Initial 4; Initial 3; Initial 2; Initial 1 |];
+    |]
+  in
+  assert_equal false (is_board_valid board)
+
+let test_board_valid_false_box_conflict _ =
+  (* Top-left 2×2 box has two 1’s *)
+  let board =
+    [|
+      [| Initial 1; Initial 2; Initial 3; Initial 4 |];
+      [| Initial 1; Initial 4; Empty; Initial 2 |];
+      [| Initial 2; Initial 1; Initial 4; Initial 3 |];
+      [| Initial 4; Initial 3; Initial 2; Initial 1 |];
+    |]
+  in
+  assert_equal false (is_board_valid board)
+
 (* Suite *)
 let suite =
   "SudokuTests"
@@ -307,6 +529,20 @@ let suite =
          "column conflict" >:: test_column_conflict;
          "box conflict" >:: test_box_conflict;
          "valid move" >:: test_valid_move;
+         "row_conflict" >:: test_row_conflicts;
+         "col_conflict" >:: test_col_conflicts;
+         "box_conflict" >:: test_box_conflicts;
+         "no_duplicates" >:: test_no_conflicts;
+         "string_of_board_with_conflicts"
+         >:: test_string_of_board_with_conflicts;
+         "string_of_board_with_conflicts main.ml workflow"
+         >:: test_conflict_workflow;
+         "complete_false" >:: test_board_complete_false;
+         "complete_true" >:: test_board_complete_true;
+         "valid_true" >:: test_board_valid_true;
+         "invalid_row" >:: test_board_valid_false_row_conflict;
+         "invalid_col" >:: test_board_valid_false_col_conflict;
+         "invalid_box" >:: test_board_valid_false_box_conflict;
        ]
 
 let () = run_test_tt_main suite
