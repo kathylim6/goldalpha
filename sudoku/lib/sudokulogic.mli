@@ -62,7 +62,7 @@ val string_of_board : cell array array -> string
 
 val make_sixteen_board : string -> cell array array
 (** [make_sixteen_board filepath] returns a 2D cell array of Sudoku board that
-    is 16x16. This function randomly chooses from 10 pre-made 16x16 Sudoku
+    is 16x16. This function randomly chooses from 3 pre-made 16x16 Sudoku
     puzzles by reading the appropriate CSV file from the filepath, therefore the
     puzzle is not randomly generated with the same algorithm as a 4x4 or 9x9
     board.
