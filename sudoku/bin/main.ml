@@ -39,8 +39,8 @@ let () =
   let fourth_walkthrough_message =
     "Now, let's say that we provide a command that violates the rules of \
      sudoku. For instance, 0 1 4. The game would indicate that this input \
-     violates the rules of sudoku and reprompt, but let's understand why. Here \
-     is the board with this invalid change:"
+     violates the rules of sudoku and not save the change, but let's \
+     understand why. Here is the board with this invalid change:"
   in
   let example_board_incorrect_change =
     [|
@@ -269,4 +269,21 @@ let () =
             (red ^ "Invalid input! Make sure row/col are within bounds." ^ reset)
     end
   done;
-  print_endline "Thanks for playing!"
+  print_endline
+    "Thanks for playing! Would you like to see your valid move history or full \
+     move history? Respond with (V) for valid move history, (F) with full move \
+     history, and anything else for neither.";
+  let history_reponse = read_line () in
+  if history_reponse = "V" || history_reponse = "v" then
+    let reversed_history = List.rev !valid_history in
+    let history_length = List.length reversed_history in
+    for i = 0 to history_length - 1 do
+      print_endline (List.nth reversed_history i)
+    done
+  else if history_reponse = "F" || history_reponse = "f" then
+    let reversed_history = List.rev !full_history in
+    let history_length = List.length reversed_history in
+    for i = 0 to history_length - 1 do
+      print_endline (List.nth reversed_history i)
+    done
+  else print_endline "Have a nice rest of your day!"
