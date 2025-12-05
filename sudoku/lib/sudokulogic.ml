@@ -139,7 +139,7 @@ let%test "convert_csv handles only zeros" =
     statically typed filepaths in the data directory that contain already
     curated 16x16 puzzles*)
 let choose_random_file_path () =
-  let rand_int = 1 + Random.int 10 in
+  let rand_int = 1 + Random.int 3 in
   let filepath = "data/16board" ^ string_of_int rand_int ^ ".csv" in
   filepath
 
@@ -334,9 +334,10 @@ let string_of_board_with_conflicts input_board conflict_positions : string =
          else string_of_row_with_conflicts x root conflict_positions i ^ "\n")
        board_list)
 
-(** [convert_to_cords board] returns an array of all (row, col) coordinate pairs
-    in [board], ordered row-major (left-to-right, top-to-bottom). Used as a
-    helper for puzzle generation. *)
+(** [convert_to_cords] takes in a board represented by an array of array of
+    cells and outputs an array of tuples of coordinates. The first two ints
+    represent the coordinate position of the cell in the sudoku board.
+    [convert_to_cords] is used as a helper in the creation of the puzzle. *)
 let convert_to_cords (board : cell array array) : (int * int) array =
   let board_dim = Array.length board in
   let result = Array.make (board_dim * board_dim) (0, 0) in
@@ -500,19 +501,25 @@ let count_solutions board limit =
   in
   backtrack 0
 
-(** [make_unique board] modifies [board] to create a sudoku puzzle with a unique
-    solution by removing cells one at a time. Starts with a complete, valid
-    board and removes values while ensuring exactly one solution remains.
-    Returns the modified board. *)
-let make_unique board =
+(** [make_unique] takes in an array of cells that represents a completely filled
+    in, valid board. It uses an algorithm to modify this board to make a new
+    random puzzle that has a unique solution which will then given to the user*)
+let make_unique (board : cell array array) (level : int) =
   let coords = convert_to_cords board in
   Random.self_init ();
   Array.shuffle ~rand:(fun n -> Random.int n) coords;
+  let proportion = if level = 1 then 0.5 else if level = 2 then 0.75 else 1.0 in
+  let board_dim = Array.length board in
+  let total_cells = board_dim * board_dim in
+  let rounded_proportion =
+    int_of_float (float_of_int total_cells *. proportion)
+  in
+  let coord_with_level = Array.sub coords 0 rounded_proportion in
 
   let rec remove index =
-    if index = Array.length coords then true
+    if index = Array.length coord_with_level then true
     else
-      let r, c = coords.(index) in
+      let r, c = coord_with_level.(index) in
       match board.(r).(c) with
       | Empty -> remove (index + 1)
       | Initial n ->
@@ -553,6 +560,84 @@ let empty_n n = Array.make_matrix n n Empty
 
 [@@@coverage off]
 
+(* Helper: deep copy a board *)
+let copy_board (b : cell array array) = Array.map Array.copy b
+
+(* Helper: count empties *)
+let count_empty (b : cell array array) =
+  let total = ref 0 in
+  Array.iter
+    (fun row -> Array.iter (fun c -> if c = Empty then incr total) row)
+    b;
+  !total
+
+(* ---------- LEVEL 1 TESTS (proportion = 0.5) ---------- *)
+
+let%test "make_unique_level1_has_unique_solution_1" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 1 in
+  count_solutions p 2 = 1
+
+let%test "make_unique_level1_valid_board_2" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 1 in
+  count_solutions p 2 = 1
+
+let%test "make_unique_level1_removes_about_half_3" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 1 in
+  let empties = count_empty p in
+  empties >= 4 && empties <= 12
+
+let%test "make_unique_level1_modifies_board_4" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 1 in
+  p <> full_4x4
+
+let%test "make_unique_level1_does_not_add_cells_5" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 1 in
+  let filled_after =
+    Array.fold_left
+      (fun acc row ->
+        acc + Array.fold_left (fun a c -> if c <> Empty then a + 1 else a) 0 row)
+      0 p
+  in
+  filled_after <= 16
+
+(* ---------- LEVEL 2 TESTS (proportion = 0.75) ---------- *)
+
+let%test "make_unique_level2_has_unique_solution_1" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 2 in
+  count_solutions p 2 = 1
+
+let%test "make_unique_level2_valid_board_2" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 2 in
+  count_solutions p 2 = 1
+
+let%test "make_unique_level2_removes_about_75percent_3" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 2 in
+  let empties = count_empty p in
+  empties >= 2 && empties <= 14
+
+let%test "make_unique_level2_modifies_board_4" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 2 in
+  p <> full_4x4
+
+let%test "make_unique_level2_does_not_add_cells_5" =
+  let b = copy_board full_4x4 in
+  let p = make_unique b 2 in
+  let filled_after =
+    Array.fold_left
+      (fun acc row ->
+        acc + Array.fold_left (fun a c -> if c <> Empty then a + 1 else a) 0 row)
+      0 p
+  in
+  filled_after <= 16
 (* in-line tests for checking [valid] *)
 
 let%test "valid: permit placing value when not present in row/col/box (4x4)" =
@@ -620,7 +705,7 @@ let%test "make_unique: produced puzzle has unique solution (4x4)" =
   (* Start from a valid full 4x4, run make_unique, then assert the produced
      board has exactly 1 solution. *)
   let b = Array.init 4 (fun i -> Array.copy full_4x4.(i)) in
-  ignore (make_unique b);
+  ignore (make_unique b 3);
   count_solutions b 2 = 1
 
 let%test "make_unique: preserves initial values only as needed (4x4)" =
@@ -628,7 +713,7 @@ let%test "make_unique: preserves initial values only as needed (4x4)" =
      uniqueness. We assert that after make_unique, every non-empty cell is
      Initial and numbers are in range. *)
   let b = Array.init 4 (fun i -> Array.copy full_4x4.(i)) in
-  ignore (make_unique b);
+  ignore (make_unique b 3);
   Array.for_all
     (Array.for_all (function
       | Initial v -> 1 <= v && v <= 4
@@ -638,12 +723,12 @@ let%test "make_unique: preserves initial values only as needed (4x4)" =
 
 [@@@coverage on]
 
-(** [generate_board num] prints a new random Sudoku puzzle to solve, based on
-    either dimensions 4 or 9. *)
-let generate_board num =
+(** [generate_board] prints a new random Sudoku puzzle to solve, based on either
+    dimensions 4 or 9. *)
+let generate_board num level =
   match num with
-  | 4 -> make_unique (make_four_board ())
-  | 9 -> make_unique (make_nine_board ())
+  | 4 -> make_unique (make_four_board ()) level
+  | 9 -> make_unique (make_nine_board ()) level
   | _ -> failwith "Only 4x4 and 9x9 boards supported for random generation"
 
 (** [check_valid_row user_input board row] checks that there are no overlapping
@@ -671,11 +756,11 @@ let board =
 (* in-line test to make sure that generated board actually has one unique
    solution *)
 let%test "generated 4x4 puzzle has one unique solution" =
-  let b = generate_board 4 in
+  let b = generate_board 4 3 in
   count_solutions b 100 = 1
 
 let%test "generated 9x9 puzzle has one unique solution" =
-  let b = generate_board 9 in
+  let b = generate_board 9 3 in
   count_solutions b 100 = 1
 
 (* in-line tests for check_valid_row *)

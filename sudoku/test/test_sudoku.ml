@@ -83,51 +83,51 @@ let boxes_are_distinct number board =
 
 (* tests for generate_board 4 *)
 let test_board_size_4 _ =
-  let b = generate_board 4 in
+  let b = generate_board 4 3 in
   assert_bool "board must be 4 x 4"
     (Array.length b = 4 && Array.for_all (fun row -> Array.length row = 4) b)
 
 let test_valid_cells_4 _ =
-  let b = generate_board 4 in
+  let b = generate_board 4 3 in
   assert_bool "all cells must be Initial 1..4 or Empty"
     (Array.for_all (Array.for_all (valid_cell 4)) b)
 
 let test_rows_distinct_4 _ =
-  let b = generate_board 4 in
+  let b = generate_board 4 3 in
   assert_bool "rows must have distinct non-empty values" (rows_are_distinct 4 b)
 
 let test_cols_distinct_4 _ =
-  let b = generate_board 4 in
+  let b = generate_board 4 3 in
   assert_bool "columns must have distinct non-empty values"
     (cols_are_distinct 4 b)
 
 let test_boxes_distinct_4 _ =
-  let b = generate_board 4 in
+  let b = generate_board 4 3 in
   assert_bool "4x4 boxes must have distinct non-empty values"
     (boxes_are_distinct 4 b)
 
 (* tests for generate_board 9 *)
 let test_board_size_9 _ =
-  let b = generate_board 9 in
+  let b = generate_board 9 3 in
   assert_bool "board must be 9 x 9"
     (Array.length b = 9 && Array.for_all (fun row -> Array.length row = 9) b)
 
 let test_valid_cells_9 _ =
-  let b = generate_board 9 in
+  let b = generate_board 9 3 in
   assert_bool "all cells must be Initial 1..9 or Empty"
     (Array.for_all (Array.for_all (valid_cell 9)) b)
 
 let test_rows_distinct_9 _ =
-  let b = generate_board 9 in
+  let b = generate_board 9 3 in
   assert_bool "rows must have distinct non-empty values" (rows_are_distinct 9 b)
 
 let test_cols_distinct_9 _ =
-  let b = generate_board 9 in
+  let b = generate_board 9 3 in
   assert_bool "columns must have distinct non-empty values"
     (cols_are_distinct 9 b)
 
 let test_boxes_distinct_9 _ =
-  let b = generate_board 9 in
+  let b = generate_board 9 3 in
   assert_bool "9x9 boxes must have distinct non-empty values"
     (boxes_are_distinct 9 b)
 

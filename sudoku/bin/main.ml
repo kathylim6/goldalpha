@@ -148,10 +148,23 @@ let () =
   done;
   let chosen_int = int_of_string !chosen_size in
 
+  if chosen_int = 4 || chosen_int = 9 then
+    print_endline
+      "If select whether the level you want to play \n\n\
+      \      Level 1 Easy : (1) \n\n\
+      \      Level 2 Medium : (2) \n\n\
+      \      Level 3 Hard : (3) \n\
+      \      ";
+
+  let pre_processed_level = read_line () in
+  let level = int_of_string pre_processed_level in
+
+  print_endline ("You are playing at level " ^ pre_processed_level);
+
   let board =
     match chosen_int with
-    | 4 -> generate_board 4
-    | 9 -> generate_board 9
+    | 4 -> generate_board 4 level
+    | 9 -> generate_board 9 level
     | 16 -> make_sixteen_board (choose_random_file_path ())
     | _ -> failwith "Only 4x4, 9x9, or 16x16 boards supported"
   in
@@ -169,88 +182,92 @@ let () =
     print_endline "Enter '0' as the value to delete a cell, or 'quit' to exit:";
     let input = read_line () in
     if input = "quit" then playing := false
-    else full_history := input :: !full_history;
-    try
-      let parts = String.split_on_char ' ' input in
-      match parts with
-      | [ row_str; col_str; val_str ] ->
-          let row = int_of_string row_str in
-          let col = int_of_string col_str in
-          let value = int_of_string val_str in
+    else begin
+      full_history := input :: !full_history;
+      try
+        let parts = String.split_on_char ' ' input in
+        match parts with
+        | [ row_str; col_str; val_str ] ->
+            let row = int_of_string row_str in
+            let col = int_of_string col_str in
+            let value = int_of_string val_str in
 
-          if
-            match board.(row).(col) with
-            | Initial _ -> true
-            | _ -> false
-          then
-            print_endline (red ^ "Error: Cannot modify an initial cell!" ^ reset)
-          else if value = 0 then
-            match board.(row).(col) with
-            | UserInput _ ->
-                board.(row).(col) <- Empty;
-                valid_history := input :: !valid_history;
-                print_endline (green ^ "\nCell cleared! Updated board:" ^ reset);
-                print_endline (string_of_board board)
-            | Empty -> print_endline "Cell is already empty!"
-            | Initial _ ->
-                print_endline
-                  (red ^ "Error: Cannot delete an initial cell!" ^ reset)
-          else if value < 1 || value > chosen_int then
+            if
+              match board.(row).(col) with
+              | Initial _ -> true
+              | _ -> false
+            then
+              print_endline
+                (red ^ "Error: Cannot modify an initial cell!" ^ reset)
+            else if value = 0 then
+              match board.(row).(col) with
+              | UserInput _ ->
+                  board.(row).(col) <- Empty;
+                  valid_history := input :: !valid_history;
+                  print_endline
+                    (green ^ "\nCell cleared! Updated board:" ^ reset);
+                  print_endline (string_of_board board)
+              | Empty -> print_endline "Cell is already empty!"
+              | Initial _ ->
+                  print_endline
+                    (red ^ "Error: Cannot delete an initial cell!" ^ reset)
+            else if value < 1 || value > chosen_int then
+              print_endline
+                (red ^ "Error: Value must be between 1 and "
+               ^ string_of_int chosen_int ^ ", or 0 to delete!" ^ reset)
+            else if check_invalid_input value row col board then (
+              let temp_board =
+                Array.init (Array.length board) (fun i -> Array.copy board.(i))
+              in
+              temp_board.(row).(col) <- UserInput value;
+
+              let conflicts = find_conflicts temp_board row col value in
+              let all_conflicts = (row, col) :: conflicts in
+
+              print_endline
+                (red ^ "This input violates the rules of Sudoku!" ^ reset);
+              print_endline "What you attempted:";
+              print_endline
+                (string_of_board_with_conflicts temp_board all_conflicts))
+            else (
+              valid_history := input :: !valid_history;
+              board.(row).(col) <- UserInput value;
+              print_endline (green ^ "\nValid move! Updated board:" ^ reset);
+              print_endline (string_of_board board);
+
+              if is_board_complete board then
+                if is_board_valid board then (
+                  print_endline "";
+                  print_endline
+                    (green ^ "╔═══════════════════════════════════════╗" ^ reset);
+                  print_endline
+                    (green ^ "║                                       ║" ^ reset);
+                  print_endline
+                    (green ^ "║       CONGRATULATIONS! YOU WON!       ║" ^ reset);
+                  print_endline
+                    (green ^ "║                                       ║" ^ reset);
+                  print_endline
+                    (green ^ "║  You successfully solved the puzzle!  ║" ^ reset);
+                  print_endline
+                    (green ^ "║                                       ║" ^ reset);
+                  print_endline
+                    (green ^ "╚═══════════════════════════════════════╝" ^ reset);
+                  print_endline "";
+                  playing := false)
+                else
+                  print_endline
+                    (red ^ "Board is full but contains errors. Keep trying!"
+                   ^ reset))
+        | _ ->
             print_endline
-              (red ^ "Error: Value must be between 1 and "
-             ^ string_of_int chosen_int ^ ", or 0 to delete!" ^ reset)
-          else if check_invalid_input value row col board then (
-            let temp_board =
-              Array.init (Array.length board) (fun i -> Array.copy board.(i))
-            in
-            temp_board.(row).(col) <- UserInput value;
-
-            let conflicts = find_conflicts temp_board row col value in
-            let all_conflicts = (row, col) :: conflicts in
-
-            print_endline
-              (red ^ "This input violates the rules of Sudoku!" ^ reset);
-            print_endline "What you attempted:";
-            print_endline
-              (string_of_board_with_conflicts temp_board all_conflicts))
-          else (
-            valid_history := input :: !valid_history;
-            board.(row).(col) <- UserInput value;
-            print_endline (green ^ "\nValid move! Updated board:" ^ reset);
-            print_endline (string_of_board board);
-
-            if is_board_complete board then
-              if is_board_valid board then (
-                print_endline "";
-                print_endline
-                  (green ^ "╔═══════════════════════════════════════╗" ^ reset);
-                print_endline
-                  (green ^ "║                                       ║" ^ reset);
-                print_endline
-                  (green ^ "║       CONGRATULATIONS! YOU WON!       ║" ^ reset);
-                print_endline
-                  (green ^ "║                                       ║" ^ reset);
-                print_endline
-                  (green ^ "║  You successfully solved the puzzle!  ║" ^ reset);
-                print_endline
-                  (green ^ "║                                       ║" ^ reset);
-                print_endline
-                  (green ^ "╚═══════════════════════════════════════╝" ^ reset);
-                print_endline "";
-                playing := false)
-              else
-                print_endline
-                  (red ^ "Board is full but contains errors. Keep trying!"
-                 ^ reset))
+              (red ^ "Invalid input format! Use: row col value" ^ reset)
+      with
+      | Invalid_argument _ ->
+          print_endline (red ^ "Invalid number format!" ^ reset)
       | _ ->
           print_endline
-            (red ^ "Invalid input format! Use: row col value" ^ reset)
-    with
-    | Invalid_argument _ ->
-        print_endline (red ^ "Invalid number format!" ^ reset)
-    | _ ->
-        print_endline
-          (red ^ "Invalid input! Make sure row/col are within bounds." ^ reset)
+            (red ^ "Invalid input! Make sure row/col are within bounds." ^ reset)
+    end
   done;
   print_endline
     "Thanks for playing! Would you like to see your valid move history or full \

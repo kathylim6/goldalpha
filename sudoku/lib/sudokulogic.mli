@@ -34,7 +34,7 @@ val choose_random_file_path : unit -> string
     typed filepaths in the data directory that contain already curated 16x16
     puzzles*)
 
-val generate_board : int -> cell array array
+val generate_board : int -> int -> cell array array
 (** [generate_board n] returns 2D cell array of a Sudoku board, depending on
     [n]:
 
